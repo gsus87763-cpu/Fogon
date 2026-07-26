@@ -1,0 +1,87 @@
+<svg viewBox="0 0 1300 900" xmlns="http://www.w3.org/2000/svg" font-family="Work Sans, Arial, sans-serif">
+  <style>
+    .modulo { font-size: 15px; font-weight: 700; fill: #5c1a1a; }
+    .entidad { fill: #ffffff; stroke: #c9922a; stroke-width: 1.5; rx: 6; }
+    .entidad-txt { font-size: 12px; fill: #241713; font-weight: 600; }
+    .rel { stroke: #8a7a68; stroke-width: 1; fill: none; }
+    .rel-txt { font-size: 10px; fill: #6b5c4f; }
+  </style>
+  <rect width="1300" height="900" fill="#faf3e8"/>
+  <text x="30" y="35" font-size="22" font-weight="700" fill="#3d1010">EL FOGÓN — Diagrama Entidad-Relación (esquemático por módulos)</text>
+
+  <!-- Módulo Seguridad -->
+  <text x="30" y="70" class="modulo">Seguridad / Administración</text>
+  <g>
+    <rect x="30" y="80" width="140" height="34" class="entidad"/><text x="40" y="101" class="entidad-txt">ROL</text>
+    <rect x="30" y="124" width="140" height="34" class="entidad"/><text x="40" y="145" class="entidad-txt">USUARIO</text>
+    <rect x="30" y="168" width="140" height="34" class="entidad"/><text x="40" y="189" class="entidad-txt">LOG_ACCESO</text>
+  </g>
+
+  <!-- Módulo RRHH -->
+  <text x="30" y="250" class="modulo">Personal / RRHH</text>
+  <g>
+    <rect x="30" y="260" width="150" height="34" class="entidad"/><text x="40" y="281" class="entidad-txt">EMPLEADO</text>
+    <rect x="30" y="304" width="150" height="34" class="entidad"/><text x="40" y="325" class="entidad-txt">COCINERO</text>
+    <rect x="30" y="348" width="150" height="34" class="entidad"/><text x="40" y="369" class="entidad-txt">ADMINISTRADOR</text>
+    <rect x="30" y="392" width="150" height="34" class="entidad"/><text x="40" y="413" class="entidad-txt">CONTRATO</text>
+    <rect x="30" y="436" width="150" height="34" class="entidad"/><text x="40" y="457" class="entidad-txt">REGISTRO_CARGO</text>
+    <rect x="30" y="480" width="150" height="34" class="entidad"/><text x="40" y="501" class="entidad-txt">CERTIFICACION</text>
+    <rect x="30" y="524" width="150" height="34" class="entidad"/><text x="40" y="545" class="entidad-txt">ASISTENCIA</text>
+  </g>
+
+  <!-- Módulo Salón -->
+  <text x="330" y="70" class="modulo">Salón / Infraestructura</text>
+  <g>
+    <rect x="330" y="80" width="150" height="34" class="entidad"/><text x="340" y="101" class="entidad-txt">AREA</text>
+    <rect x="330" y="124" width="150" height="34" class="entidad"/><text x="340" y="145" class="entidad-txt">AMBIENTE</text>
+    <rect x="330" y="168" width="150" height="34" class="entidad"/><text x="340" y="189" class="entidad-txt">COCINA</text>
+    <rect x="330" y="212" width="150" height="34" class="entidad"/><text x="340" y="233" class="entidad-txt">EQUIPAMIENTO</text>
+    <rect x="330" y="256" width="150" height="34" class="entidad"/><text x="340" y="277" class="entidad-txt">MESA</text>
+  </g>
+
+  <!-- Módulo Comercial -->
+  <text x="330" y="360" class="modulo">Comercial / Reservas</text>
+  <g>
+    <rect x="330" y="370" width="150" height="34" class="entidad"/><text x="340" y="391" class="entidad-txt">CLIENTE</text>
+    <rect x="330" y="414" width="150" height="34" class="entidad"/><text x="340" y="435" class="entidad-txt">RESERVA</text>
+    <rect x="330" y="458" width="150" height="34" class="entidad"/><text x="340" y="479" class="entidad-txt">EVENTO</text>
+    <rect x="330" y="502" width="150" height="34" class="entidad"/><text x="340" y="523" class="entidad-txt">CARTA</text>
+    <rect x="330" y="546" width="150" height="34" class="entidad"/><text x="340" y="567" class="entidad-txt">PRODUCTO</text>
+  </g>
+
+  <!-- Módulo Almacén -->
+  <text x="630" y="70" class="modulo">Almacén / Compras</text>
+  <g>
+    <rect x="630" y="80" width="170" height="34" class="entidad"/><text x="640" y="101" class="entidad-txt">INGREDIENTE</text>
+    <rect x="630" y="124" width="170" height="34" class="entidad"/><text x="640" y="145" class="entidad-txt">ALMACEN</text>
+    <rect x="630" y="168" width="170" height="34" class="entidad"/><text x="640" y="189" class="entidad-txt">DETALLE_COMPRA</text>
+    <rect x="630" y="212" width="170" height="34" class="entidad"/><text x="640" y="233" class="entidad-txt">DETALLE_COMPRA_PRODUCTO</text>
+    <rect x="630" y="256" width="170" height="34" class="entidad"/><text x="640" y="277" class="entidad-txt">COCINA_INGREDIENTE</text>
+    <rect x="630" y="300" width="170" height="34" class="entidad"/><text x="640" y="321" class="entidad-txt">COCINA_EQUIPAMIENTO</text>
+  </g>
+
+  <!-- Módulo Finanzas -->
+  <text x="630" y="380" class="modulo">Finanzas</text>
+  <g>
+    <rect x="630" y="390" width="170" height="34" class="entidad"/><text x="640" y="411" class="entidad-txt">RECURSO_MONETARIO</text>
+  </g>
+
+  <!-- Relaciones (líneas ilustrativas) -->
+  <g class="rel">
+    <line x1="180" y1="141" x2="330" y2="97"/>
+    <line x1="180" y1="141" x2="330" y2="387"/>
+    <line x1="180" y1="365" x2="330" y2="185"/>
+    <line x1="180" y1="497" x2="330" y2="185"/>
+    <line x1="480" y1="97" x2="630" y2="185"/>
+    <line x1="480" y1="519" x2="480" y2="546"/>
+    <line x1="800" y1="141" x2="800" y2="185"/>
+    <line x1="800" y1="185" x2="800" y2="229"/>
+    <line x1="800" y1="97" x2="800" y2="273"/>
+  </g>
+
+  <text x="30" y="620" class="modulo">Relaciones principales (según diagrama original)</text>
+  <text x="30" y="645" class="rel-txt">ADMINISTRADOR supervisa AREA / EMPLEADO · COCINERO posee CERTIFICACION · COCINA utiliza EQUIPAMIENTO e INGREDIENTE</text>
+  <text x="30" y="663" class="rel-txt">CARTA contiene PRODUCTO · ALMACEN almacena INGREDIENTE · DETALLE_COMPRA conforma DETALLE_COMPRA_PRODUCTO</text>
+  <text x="30" y="681" class="rel-txt">CLIENTE tiene RESERVA · RESERVA ocupa MESA · MESA pertenece a AMBIENTE · ALMACEN distribuye INGREDIENTE hacia COCINA</text>
+  <text x="30" y="710" class="rel-txt" font-style="italic">Diagrama esquemático por módulos — el diccionario de datos (diccionario_datos.md) detalla cada atributo, PK y FK.</text>
+</svg>
