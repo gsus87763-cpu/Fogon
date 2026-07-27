@@ -359,7 +359,7 @@ a { color: inherit; }
   }
   .nav-premium__enlaces {
     position: fixed;
-    top: 64px; left: 0; right: 0; bottom: 0;
+    top: 64px; left: 0; right: 0;
     background: rgba(20, 15, 11, .98);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -367,8 +367,9 @@ a { color: inherit; }
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
-    gap: var(--space-5);
-    padding: var(--space-6) var(--space-5);
+    gap: var(--space-4);
+    padding: var(--space-5);
+    max-height: calc(100vh - 64px);
     overflow-y: auto;
     transform: translateY(-8px);
     opacity: 0;
@@ -399,7 +400,6 @@ a { color: inherit; }
   .nav-premium, .nav-premium__enlaces, .nav-premium__enlace, .nav-premium__enlace::after,
   .nav-premium__cta, .nav-premium__salir, .nav-premium__hamburguesa, .nav-premium__marca { transition: none; }
 }
-
 /* --- Filete dorado / separador --- */
 .filete {
   height: 3px;
