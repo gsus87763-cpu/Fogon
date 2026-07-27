@@ -44,7 +44,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className={`nav-premium ${conFondo ? 'nav-premium--con-fondo' : ''} ${enHeroCompleto && !conFondo ? 'nav-premium--transparente' : ''}`}>
+    <nav className={`nav-premium ${conFondo ? 'nav-premium--con-fondo' : ''} ${enHeroCompleto && !conFondo ? 'nav-premium--transparente' : ''} ${abierto ? 'nav-premium--menu-abierto' : ''}`}>
       <div className="nav-premium__interna">
         <NavLink to="/" className="nav-premium__marca" onClick={() => setAbierto(false)}>El Fogón</NavLink>
 

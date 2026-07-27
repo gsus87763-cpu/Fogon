@@ -349,15 +349,27 @@ a { color: inherit; }
 @media (max-width: 780px) {
   .nav-premium__hamburguesa { display: flex; }
   .nav-premium { background: rgba(30, 23, 18, .96); backdrop-filter: blur(14px); }
+  /* El menú desplegable siempre debe leerse sobre fondo sólido, incluso si
+     la barra está en su estado transparente (hero de Inicio sin scroll). */
+  .nav-premium--transparente.nav-premium--menu-abierto,
+  .nav-premium--menu-abierto {
+    background: rgba(20, 15, 11, .98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
   .nav-premium__enlaces {
     position: fixed;
     top: 64px; left: 0; right: 0; bottom: 0;
-    background: var(--espresso);
+    background: rgba(20, 15, 11, .98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 12px 28px rgba(0,0,0,.35);
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
     gap: var(--space-5);
     padding: var(--space-6) var(--space-5);
+    overflow-y: auto;
     transform: translateY(-8px);
     opacity: 0;
     pointer-events: none;
@@ -370,9 +382,17 @@ a { color: inherit; }
     pointer-events: auto;
     visibility: visible;
   }
-  .nav-premium__enlace { font-size: 1.05rem; }
+  .nav-premium__enlace {
+    font-size: 1.1rem;
+    width: 100%;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .nav-premium__enlace::after { display: none; }
+  .nav-premium__enlace.activo { color: var(--dorado-claro); }
   .nav-premium__cuenta { flex-direction: column; align-items: flex-start; gap: var(--space-4); width: 100%; }
   .nav-premium__cta, .nav-premium__salir { width: 100%; text-align: center; }
+  .boton-tema, .nav-premium__icono-carrito { align-self: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
