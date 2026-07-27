@@ -31,3 +31,10 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`✔ El Fogón API escuchando en http://localhost:${PORT}`);
 });
+
+// Red de seguridad: si algún handler futuro olvida capturar un error async,
+// esto evita que tumbe todo el proceso (y entre en loop de reinicios en
+// Railway) — solo lo registra en consola para poder revisarlo.
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection (no debería llegar aquí, revisar el route handler):', err);
+});
