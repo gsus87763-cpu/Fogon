@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const financeModel = require('../models/financeModel');
 
 // GET /api/estadisticas/reservas-por-dia -> últimos 14 días
 async function reservasPorDia(req, res) {
@@ -18,16 +19,10 @@ async function reservasPorDia(req, res) {
 }
 
 // GET /api/estadisticas/ingresos-por-mes
+// Ingresos = FACTURA emitida; Egresos = PAGO_EMPLEADO pagado + DETALLE_COMPRA
 async function ingresosPorMes(req, res) {
   try {
-    const [filas] = await pool.query(
-      `SELECT DATE_FORMAT(fecha, '%Y-%m') AS mes,
-              SUM(CASE WHEN tipo = 'INGRESO' THEN monto ELSE 0 END) AS ingresos,
-              SUM(CASE WHEN tipo = 'EGRESO' THEN monto ELSE 0 END) AS egresos
-       FROM RECURSO_MONETARIO
-       GROUP BY mes
-       ORDER BY mes ASC`
-    );
+    const filas = await financeModel.resumenPorMes();
     res.json(filas);
   } catch (err) {
     console.error(err);

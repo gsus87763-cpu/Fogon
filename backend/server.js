@@ -3,10 +3,13 @@ const express = require('express');
 const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
-const productoRoutes = require('./routes/productoRoutes');
-const reservaRoutes = require('./routes/reservaRoutes');
-const estadisticaRoutes = require('./routes/estadisticaRoutes');
-const infraestructuraRoutes = require('./routes/infraestructuraRoutes');
+const adminTablasRoutes = require('./routes/adminTablasRoutes');
+// PENDIENTES DE PORTAR al nuevo esquema (usan nombres de tabla del diseño
+// anterior: RESERVA_PRODUCTO, PRODUCTO con id_carta, etc. — ya no existen así):
+// const productoRoutes = require('./routes/productoRoutes');
+// const reservaRoutes = require('./routes/reservaRoutes');
+// const estadisticaRoutes = require('./routes/estadisticaRoutes');
+// const infraestructuraRoutes = require('./routes/infraestructuraRoutes');
 
 const app = express();
 
@@ -16,10 +19,7 @@ app.use(express.json());
 app.get('/api/health', (req, res) => res.json({ estado: 'ok', servicio: 'El Fogón API' }));
 
 app.use('/api/auth', authRoutes);
-app.use('/api/productos', productoRoutes);
-app.use('/api/reservas', reservaRoutes);
-app.use('/api/estadisticas', estadisticaRoutes);
-app.use('/api', infraestructuraRoutes);
+app.use('/api/admin-tablas', adminTablasRoutes);
 
 // Manejador de errores genérico
 app.use((err, req, res, next) => {
