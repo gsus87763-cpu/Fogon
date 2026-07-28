@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext.jsx';
-import { IconoAdvertencia, IconoRefrescar } from '../components/Icons.jsx';
+import { IconoAdvertencia } from '../components/Icons.jsx';
+import BotonGoogle from '../components/BotonGoogle.jsx';
 
 function validarCorreo(correo) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
@@ -11,21 +12,11 @@ function validarCorreo(correo) {
 export default function Login() {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
-  const [captcha, setCaptcha] = useState(null);
-  const [captchaRespuesta, setCaptchaRespuesta] = useState('');
   const [tocado, setTocado] = useState({});
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   const { iniciarSesion } = useAuth();
   const navigate = useNavigate();
-
-  async function cargarCaptcha() {
-    const res = await api.get('/auth/captcha');
-    setCaptcha(res.data);
-    setCaptchaRespuesta('');
-  }
-
-  useEffect(() => { cargarCaptcha(); }, []);
 
   function errorDe(campo) {
     if (!tocado[campo]) return null;
@@ -34,30 +25,26 @@ export default function Login() {
       if (!validarCorreo(correo)) return 'Ingresa un correo con formato válido (nombre@dominio.com)';
     }
     if (campo === 'password' && !password) return 'La contraseña es obligatoria';
-    if (campo === 'captcha' && !captchaRespuesta) return 'Escribe el texto de la imagen para verificar que eres humano';
     return null;
+  }
+
+  function entrarConSesion(datos) {
+    iniciarSesion(datos);
+    navigate('/panel');
   }
 
   async function enviar(e) {
     e.preventDefault();
     setError('');
-    setTocado({ correo: true, password: true, captcha: true });
-
-    if (!validarCorreo(correo) || !password || !captchaRespuesta) return;
+    setTocado({ correo: true, password: true });
+    if (!validarCorreo(correo) || !password) return;
 
     setEnviando(true);
     try {
-      const res = await api.post('/auth/login', {
-        correo, password,
-        captchaId: captcha.captchaId,
-        captchaRespuesta
-      });
-      iniciarSesion(res.data);
-      navigate('/panel');
+      const res = await api.post('/auth/login', { correo, password });
+      entrarConSesion(res.data);
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.');
-      cargarCaptcha();
-      setTocado((t) => ({ ...t, captcha: false }));
     } finally {
       setEnviando(false);
     }
@@ -94,32 +81,16 @@ export default function Login() {
               onBlur={() => setTocado((t) => ({ ...t, password: true }))}
             />
             {errorDe('password') && <span className="error-campo"><IconoAdvertencia /> {errorDe('password')}</span>}
-          </div>
-
-          <div className="campo">
-            <label>Verificación de seguridad</label>
-            {captcha && (
-              <div className="captcha-fila" style={{ background: 'var(--crema)', padding: 10, borderRadius: 8 }}>
-                <span dangerouslySetInnerHTML={{ __html: captcha.svg }} />
-                <button type="button" className="boton boton-outline" onClick={cargarCaptcha} title="Generar otro captcha" aria-label="Generar otro captcha">
-                  <IconoRefrescar />
-                </button>
-              </div>
-            )}
-            <input
-              style={{ marginTop: 8 }}
-              className={errorDe('captcha') ? 'campo-invalido' : ''}
-              value={captchaRespuesta}
-              onChange={(e) => setCaptchaRespuesta(e.target.value)}
-              onBlur={() => setTocado((t) => ({ ...t, captcha: true }))}
-              placeholder="Escribe el texto de la imagen"
-            />
-            {errorDe('captcha') && <span className="error-campo"><IconoAdvertencia /> {errorDe('captcha')}</span>}
+            <p style={{ fontSize: '.85rem', textAlign: 'right', marginTop: 6 }}>
+              <Link to="/recuperar-password">¿Olvidaste tu contraseña?</Link>
+            </p>
           </div>
 
           <button className="boton boton-primario boton-ancho" disabled={enviando}>
             {enviando ? 'Ingresando…' : 'Ingresar'}
           </button>
+
+          <BotonGoogle onExito={entrarConSesion} onError={setError} />
 
           <p style={{ fontSize: '.9rem', textAlign: 'center' }}>
             ¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link>
