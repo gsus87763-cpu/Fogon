@@ -7,10 +7,9 @@ const adminTablasRoutes = require('./routes/adminTablasRoutes');
 const productoRoutes = require('./routes/productoRoutes');
 const infraestructuraRoutes = require('./routes/infraestructuraRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
-// PENDIENTES DE PORTAR al nuevo esquema (reserva ya no tiene hora/motivo/activo;
-// estadisticas usaba RECURSO_MONETARIO que ya no existe):
-// const reservaRoutes = require('./routes/reservaRoutes');
-// const estadisticaRoutes = require('./routes/estadisticaRoutes');
+const reservaRoutes = require('./routes/reservaRoutes');
+const estadisticaRoutes = require('./routes/estadisticaRoutes');
+const financeRoutes = require('./routes/financeRoutes');
 
 const app = express();
 
@@ -40,6 +39,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin-tablas', adminTablasRoutes);
 app.use('/api/productos', productoRoutes);
 app.use('/api/clientes', clienteRoutes);
+app.use('/api/reservas', reservaRoutes);
+app.use('/api/estadisticas', estadisticaRoutes);
+app.use('/api/finanzas', financeRoutes);
 app.use('/api', infraestructuraRoutes);
 
 // Manejador de errores genérico

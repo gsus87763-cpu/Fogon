@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -41,8 +41,16 @@ export default function Registro() {
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [captcha, setCaptcha] = useState(null);
+  const [captchaTexto, setCaptchaTexto] = useState('');
   const { iniciarSesion } = useAuth();
   const navigate = useNavigate();
+
+  function cargarCaptcha() {
+    setCaptchaTexto('');
+    api.get('/auth/captcha').then((res) => setCaptcha(res.data)).catch(() => setCaptcha(null));
+  }
+  useEffect(cargarCaptcha, []);
 
   const fortaleza = evaluarFortalezaLocal(form.password);
   const contraseñasCoinciden = form.password && form.password === form.confirmarPassword;
@@ -81,18 +89,24 @@ export default function Registro() {
       setError('Las contraseñas no coinciden.');
       return;
     }
+    if (!captchaTexto) {
+      setError('Ingresa el texto del captcha');
+      return;
+    }
 
     setEnviando(true);
     try {
       const res = await api.post('/auth/registro', {
         nombre: form.nombre, apellidos: form.apellidos, correo: form.correo,
-        telefono: form.telefono, password: form.password
+        telefono: form.telefono, password: form.password,
+        captchaId: captcha?.captchaId, captchaTexto
       });
       iniciarSesion(res.data);
       setExito('Cuenta creada correctamente. Te llevamos a tu panel…');
       setTimeout(() => navigate('/panel'), 1200);
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo completar el registro');
+      cargarCaptcha();
     } finally {
       setEnviando(false);
     }
@@ -195,6 +209,27 @@ export default function Registro() {
             {tocado.confirmarPassword && contraseñasCoinciden && (
               <span className="texto-exito-campo"><IconoCheck width="12" height="12" /> Las contraseñas coinciden</span>
             )}
+          </div>
+
+          <div className="campo">
+            <label>Captcha</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {captcha && (
+                <div
+                  style={{ border: '1px solid var(--borde, #ccc)', borderRadius: 6, overflow: 'hidden' }}
+                  dangerouslySetInnerHTML={{ __html: captcha.svg }}
+                />
+              )}
+              <button type="button" className="boton boton-secundario" onClick={cargarCaptcha}>
+                ⟳
+              </button>
+            </div>
+            <input
+              style={{ marginTop: 8 }}
+              placeholder="Escribe el texto de la imagen"
+              value={captchaTexto}
+              onChange={(e) => setCaptchaTexto(e.target.value)}
+            />
           </div>
 
           <button className="boton boton-primario boton-ancho" disabled={enviando}>

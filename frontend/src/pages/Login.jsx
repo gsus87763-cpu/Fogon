@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -15,8 +15,16 @@ export default function Login() {
   const [tocado, setTocado] = useState({});
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [captcha, setCaptcha] = useState(null);
+  const [captchaTexto, setCaptchaTexto] = useState('');
   const { iniciarSesion } = useAuth();
   const navigate = useNavigate();
+
+  function cargarCaptcha() {
+    setCaptchaTexto('');
+    api.get('/auth/captcha').then((res) => setCaptcha(res.data)).catch(() => setCaptcha(null));
+  }
+  useEffect(cargarCaptcha, []);
 
   function errorDe(campo) {
     if (!tocado[campo]) return null;
@@ -38,13 +46,20 @@ export default function Login() {
     setError('');
     setTocado({ correo: true, password: true });
     if (!validarCorreo(correo) || !password) return;
+    if (!captchaTexto) {
+      setError('Ingresa el texto del captcha');
+      return;
+    }
 
     setEnviando(true);
     try {
-      const res = await api.post('/auth/login', { correo, password });
+      const res = await api.post('/auth/login', {
+        correo, password, captchaId: captcha?.captchaId, captchaTexto
+      });
       entrarConSesion(res.data);
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.');
+      cargarCaptcha();
     } finally {
       setEnviando(false);
     }
@@ -84,6 +99,27 @@ export default function Login() {
             <p style={{ fontSize: '.85rem', textAlign: 'right', marginTop: 6 }}>
               <Link to="/recuperar-password">¿Olvidaste tu contraseña?</Link>
             </p>
+          </div>
+
+          <div className="campo">
+            <label>Captcha</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {captcha && (
+                <div
+                  style={{ border: '1px solid var(--borde, #ccc)', borderRadius: 6, overflow: 'hidden' }}
+                  dangerouslySetInnerHTML={{ __html: captcha.svg }}
+                />
+              )}
+              <button type="button" className="boton boton-secundario" onClick={cargarCaptcha}>
+                ⟳
+              </button>
+            </div>
+            <input
+              style={{ marginTop: 8 }}
+              placeholder="Escribe el texto de la imagen"
+              value={captchaTexto}
+              onChange={(e) => setCaptchaTexto(e.target.value)}
+            />
           </div>
 
           <button className="boton boton-primario boton-ancho" disabled={enviando}>

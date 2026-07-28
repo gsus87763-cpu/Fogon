@@ -5,7 +5,7 @@ const pool = require('../config/db');
 const SELECT_BASE = `
   SELECT pe.id_producto_emplatado AS id_producto,
          pe.nombre, pe.descripcion, pe.categoria, pe.costo AS precio,
-         pe.imagen_url, pe.estado, pe.id_carta,
+         pe.imagen_url, pe.estado, pe.cupo_diario, pe.id_carta,
          c.nombre AS nombre_carta
   FROM producto_emplatado pe
   LEFT JOIN carta c ON c.id_carta = pe.id_carta
@@ -27,21 +27,21 @@ async function obtenerPorId(id) {
   return filas[0] || null;
 }
 
-async function crear({ id_carta, nombre, descripcion, categoria, precio, imagen_url }) {
+async function crear({ id_carta, nombre, descripcion, categoria, precio, imagen_url, cupo_diario }) {
   const [resultado] = await pool.query(
-    `INSERT INTO producto_emplatado (nombre, descripcion, categoria, costo, imagen_url, estado, id_carta)
-     VALUES (?, ?, ?, ?, ?, 1, ?)`,
-    [nombre, descripcion || null, categoria || null, precio, imagen_url || null, id_carta || null]
+    `INSERT INTO producto_emplatado (nombre, descripcion, categoria, costo, imagen_url, cupo_diario, estado, id_carta)
+     VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+    [nombre, descripcion || null, categoria || null, precio, imagen_url || null, cupo_diario ?? null, id_carta || null]
   );
   return obtenerPorId(resultado.insertId);
 }
 
-async function actualizar(id, { nombre, descripcion, categoria, precio, imagen_url, id_carta }) {
+async function actualizar(id, { nombre, descripcion, categoria, precio, imagen_url, cupo_diario, id_carta }) {
   await pool.query(
     `UPDATE producto_emplatado
-        SET nombre = ?, descripcion = ?, categoria = ?, costo = ?, imagen_url = ?, id_carta = ?
+        SET nombre = ?, descripcion = ?, categoria = ?, costo = ?, imagen_url = ?, cupo_diario = ?, id_carta = ?
       WHERE id_producto_emplatado = ?`,
-    [nombre, descripcion || null, categoria || null, precio, imagen_url || null, id_carta || null, id]
+    [nombre, descripcion || null, categoria || null, precio, imagen_url || null, cupo_diario ?? null, id_carta || null, id]
   );
   return obtenerPorId(id);
 }

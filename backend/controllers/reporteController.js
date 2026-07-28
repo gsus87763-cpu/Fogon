@@ -94,10 +94,10 @@ async function obtenerReservasEnRango(desde, hasta) {
     `SELECT r.id_reserva, r.fecha, r.hora, r.cantidad_personas, r.estado,
             CONCAT(c.nombre, ' ', c.apellidos) AS cliente,
             m.numero AS mesa, a.nombre AS ambiente
-     FROM RESERVA r
-     JOIN CLIENTE c ON c.id_cliente = r.id_cliente
-     JOIN MESA m ON m.id_mesa = r.id_mesa
-     JOIN AMBIENTE a ON a.id_ambiente = m.id_ambiente
+     FROM reserva r
+     JOIN cliente c ON c.id_cliente = r.id_cliente
+     JOIN mesa m ON m.id_mesa = r.id_mesa
+     JOIN ambiente a ON a.id_ambiente = m.id_ambiente
      WHERE r.fecha BETWEEN ? AND ? AND r.activo = 1
      ORDER BY r.fecha, r.hora`,
     [desde, hasta]

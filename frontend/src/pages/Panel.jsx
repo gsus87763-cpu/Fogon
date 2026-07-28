@@ -5,7 +5,10 @@ const ACCESOS_POR_ROL = {
   admin: [
     { to: '/panel/productos', titulo: 'Carta / Productos', desc: 'CRUD con eliminación lógica' },
     { to: '/panel/reservas-salon', titulo: 'Reservas y mesas', desc: 'Confirmar o revisar reservas' },
-    { to: '/panel/estadisticas', titulo: 'Reportes y estadísticas', desc: 'Gráficos y reporte PDF' }
+    { to: '/panel/estadisticas', titulo: 'Reportes y estadísticas', desc: 'Gráficos y reporte PDF' },
+    { to: '/panel/clientes', titulo: 'Clientes', desc: 'Gestionar cuentas de clientes' },
+    { to: '/panel/ambientes', titulo: 'Ambientes', desc: 'Gestionar salones y ambientes' },
+    { to: '/panel/finanzas', titulo: 'Finanzas', desc: 'Pagos, facturas y compras' }
   ],
   salon: [
     { to: '/panel/reservas-salon', titulo: 'Reservas y mesas', desc: 'Confirmar reservas del día' }
@@ -17,7 +20,8 @@ const ACCESOS_POR_ROL = {
     { to: '/panel/productos', titulo: 'Carta / Productos', desc: 'Consultar disponibilidad de platos' }
   ],
   caja: [
-    { to: '/panel/estadisticas', titulo: 'Reportes y estadísticas', desc: 'Ingresos y reporte PDF' }
+    { to: '/panel/estadisticas', titulo: 'Reportes y estadísticas', desc: 'Ingresos y reporte PDF' },
+    { to: '/panel/finanzas', titulo: 'Finanzas', desc: 'Pagos, facturas y compras' }
   ],
   cliente: [
     { to: '/reservas', titulo: 'Mis reservas', desc: 'Ver, crear o cancelar reservas' }

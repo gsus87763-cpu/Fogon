@@ -1,13 +1,13 @@
 const pool = require('../config/db');
 
 // ---------------------------------------------------------------------
-// PAGO EMPLEADO
+// PAGO empleado
 // ---------------------------------------------------------------------
 
 async function listarPagosEmpleado({ desde = null, hasta = null, id_empleado = null } = {}) {
   let sql = `SELECT p.*, CONCAT(e.nombre, ' ', e.apellidos) AS empleado
-             FROM PAGO_EMPLEADO p
-             JOIN EMPLEADO e ON e.id_empleado = p.id_empleado
+             FROM pago_empleado p
+             JOIN empleado e ON e.id_empleado = p.id_empleado
              WHERE 1=1`;
   const params = [];
   if (desde) { sql += ' AND p.fecha_pago >= ?'; params.push(desde); }
@@ -31,7 +31,7 @@ async function registrarPagoEmpleado({ id_empleado, concepto, periodo, monto, fe
     const [[{ id_pago }]] = await conexion.query('SELECT @id_pago AS id_pago');
     const [filas] = await conexion.query(
       `SELECT p.*, CONCAT(e.nombre, ' ', e.apellidos) AS empleado
-       FROM PAGO_EMPLEADO p JOIN EMPLEADO e ON e.id_empleado = p.id_empleado
+       FROM pago_empleado p JOIN empleado e ON e.id_empleado = p.id_empleado
        WHERE p.id_pago = ?`,
       [id_pago]
     );
@@ -42,18 +42,18 @@ async function registrarPagoEmpleado({ id_empleado, concepto, periodo, monto, fe
 }
 
 async function anularPagoEmpleado(id) {
-  await pool.query("UPDATE PAGO_EMPLEADO SET estado = 'ANULADO' WHERE id_pago = ?", [id]);
-  const [filas] = await pool.query('SELECT * FROM PAGO_EMPLEADO WHERE id_pago = ?', [id]);
+  await pool.query("UPDATE pago_empleado SET estado = 'ANULADO' WHERE id_pago = ?", [id]);
+  const [filas] = await pool.query('SELECT * FROM pago_empleado WHERE id_pago = ?', [id]);
   return filas[0] || null;
 }
 
 // ---------------------------------------------------------------------
-// FACTURA
+// factura
 // ---------------------------------------------------------------------
 
 async function listarFacturas({ desde = null, hasta = null } = {}) {
   let sql = `SELECT f.*, CONCAT(c.nombre, ' ', c.apellidos) AS cliente
-             FROM FACTURA f JOIN CLIENTE c ON c.id_cliente = f.id_cliente
+             FROM factura f JOIN cliente c ON c.id_cliente = f.id_cliente
              WHERE 1=1`;
   const params = [];
   if (desde) { sql += ' AND f.fecha_emision >= ?'; params.push(desde); }
@@ -65,7 +65,7 @@ async function listarFacturas({ desde = null, hasta = null } = {}) {
 }
 
 async function siguienteNumeroFactura() {
-  const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM FACTURA');
+  const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM factura');
   return `FAC-${String(total + 1).padStart(4, '0')}`;
 }
 
@@ -82,7 +82,7 @@ async function generarFactura({ id_reserva, metodo_pago }) {
     const [[{ id_factura }]] = await conexion.query('SELECT @id_factura AS id_factura');
     const [filas] = await conexion.query(
       `SELECT f.*, CONCAT(c.nombre, ' ', c.apellidos) AS cliente
-       FROM FACTURA f JOIN CLIENTE c ON c.id_cliente = f.id_cliente WHERE f.id_factura = ?`,
+       FROM factura f JOIN cliente c ON c.id_cliente = f.id_cliente WHERE f.id_factura = ?`,
       [id_factura]
     );
     return filas[0];
@@ -92,8 +92,8 @@ async function generarFactura({ id_reserva, metodo_pago }) {
 }
 
 async function anularFactura(id) {
-  await pool.query("UPDATE FACTURA SET estado = 'ANULADA' WHERE id_factura = ?", [id]);
-  const [filas] = await pool.query('SELECT * FROM FACTURA WHERE id_factura = ?', [id]);
+  await pool.query("UPDATE factura SET estado = 'ANULADA' WHERE id_factura = ?", [id]);
+  const [filas] = await pool.query('SELECT * FROM factura WHERE id_factura = ?', [id]);
   return filas[0] || null;
 }
 
@@ -103,7 +103,7 @@ async function anularFactura(id) {
 
 async function listarCompras({ desde = null, hasta = null } = {}) {
   let sql = `SELECT d.*, a.nombre AS almacen
-             FROM DETALLE_COMPRA d JOIN ALMACEN a ON a.id_almacen = d.id_almacen
+             FROM detalle_compra d JOIN almacen a ON a.id_almacen = d.id_almacen
              WHERE 1=1`;
   const params = [];
   if (desde) { sql += ' AND d.fecha_emision >= ?'; params.push(desde); }
@@ -112,7 +112,7 @@ async function listarCompras({ desde = null, hasta = null } = {}) {
 
   const [compras] = await pool.query(sql, params);
   for (const compra of compras) {
-    const [items] = await pool.query('SELECT * FROM DETALLE_COMPRA_ITEM WHERE id_detalle = ?', [compra.id_detalle]);
+    const [items] = await pool.query('SELECT * FROM detalle_compra_item WHERE id_detalle = ?', [compra.id_detalle]);
     compra.items = items;
   }
   return compras;
@@ -127,22 +127,22 @@ async function crearCompra({ id_almacen, proveedor, fecha_emision, items = [] })
     await conexion.beginTransaction();
 
     const [resultado] = await conexion.query(
-      'INSERT INTO DETALLE_COMPRA (id_almacen, proveedor, fecha_emision, monto) VALUES (?, ?, ?, 0)',
+      'INSERT INTO detalle_compra (id_almacen, proveedor, fecha_emision, monto) VALUES (?, ?, ?, 0)',
       [id_almacen, proveedor, fecha_emision]
     );
     const id_detalle = resultado.insertId;
 
     for (const item of items) {
       await conexion.query(
-        'INSERT INTO DETALLE_COMPRA_ITEM (id_detalle, descripcion, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
+        'INSERT INTO detalle_compra_item (id_detalle, descripcion, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
         [id_detalle, item.descripcion, item.cantidad, item.precio_unitario]
       );
     }
 
     await conexion.commit();
 
-    const [[compra]] = await conexion.query('SELECT * FROM DETALLE_COMPRA WHERE id_detalle = ?', [id_detalle]);
-    const [detalleItems] = await conexion.query('SELECT * FROM DETALLE_COMPRA_ITEM WHERE id_detalle = ?', [id_detalle]);
+    const [[compra]] = await conexion.query('SELECT * FROM detalle_compra WHERE id_detalle = ?', [id_detalle]);
+    const [detalleItems] = await conexion.query('SELECT * FROM detalle_compra_item WHERE id_detalle = ?', [id_detalle]);
     compra.items = detalleItems;
     return compra;
   } catch (err) {
@@ -155,19 +155,19 @@ async function crearCompra({ id_almacen, proveedor, fecha_emision, items = [] })
 
 async function agregarItemCompra(id_detalle, { descripcion, cantidad, precio_unitario }) {
   await pool.query(
-    'INSERT INTO DETALLE_COMPRA_ITEM (id_detalle, descripcion, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
+    'INSERT INTO detalle_compra_item (id_detalle, descripcion, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
     [id_detalle, descripcion, cantidad, precio_unitario]
   );
-  const [[compra]] = await pool.query('SELECT * FROM DETALLE_COMPRA WHERE id_detalle = ?', [id_detalle]);
-  const [items] = await pool.query('SELECT * FROM DETALLE_COMPRA_ITEM WHERE id_detalle = ?', [id_detalle]);
+  const [[compra]] = await pool.query('SELECT * FROM detalle_compra WHERE id_detalle = ?', [id_detalle]);
+  const [items] = await pool.query('SELECT * FROM detalle_compra_item WHERE id_detalle = ?', [id_detalle]);
   compra.items = items;
   return compra;
 }
 
 async function eliminarItemCompra(id_detalle, id_detalle_item) {
-  await pool.query('DELETE FROM DETALLE_COMPRA_ITEM WHERE id_detalle_item = ? AND id_detalle = ?', [id_detalle_item, id_detalle]);
-  const [[compra]] = await pool.query('SELECT * FROM DETALLE_COMPRA WHERE id_detalle = ?', [id_detalle]);
-  const [items] = await pool.query('SELECT * FROM DETALLE_COMPRA_ITEM WHERE id_detalle = ?', [id_detalle]);
+  await pool.query('DELETE FROM detalle_compra_item WHERE id_detalle_item = ? AND id_detalle = ?', [id_detalle_item, id_detalle]);
+  const [[compra]] = await pool.query('SELECT * FROM detalle_compra WHERE id_detalle = ?', [id_detalle]);
+  const [items] = await pool.query('SELECT * FROM detalle_compra_item WHERE id_detalle = ?', [id_detalle]);
   compra.items = items;
   return compra;
 }
@@ -183,13 +183,13 @@ async function resumenPorMes() {
            SUM(egresos) AS egresos
     FROM (
       SELECT DATE_FORMAT(fecha_emision, '%Y-%m') AS mes, SUM(monto_total) AS ingresos, 0 AS egresos
-      FROM FACTURA WHERE estado = 'EMITIDA' GROUP BY mes
+      FROM factura WHERE estado = 'EMITIDA' GROUP BY mes
       UNION ALL
       SELECT DATE_FORMAT(fecha_pago, '%Y-%m') AS mes, 0 AS ingresos, SUM(monto) AS egresos
-      FROM PAGO_EMPLEADO WHERE estado = 'PAGADO' GROUP BY mes
+      FROM pago_empleado WHERE estado = 'PAGADO' GROUP BY mes
       UNION ALL
       SELECT DATE_FORMAT(fecha_emision, '%Y-%m') AS mes, 0 AS ingresos, SUM(monto) AS egresos
-      FROM DETALLE_COMPRA GROUP BY mes
+      FROM detalle_compra GROUP BY mes
     ) t
     GROUP BY mes ORDER BY mes ASC`);
   return filas;

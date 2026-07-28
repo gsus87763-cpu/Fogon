@@ -3,9 +3,9 @@ const pool = require('../config/db');
 async function listarPorCliente(id_cliente) {
   const [filas] = await pool.query(
     `SELECT r.*, m.numero AS numero_mesa, a.nombre AS ambiente
-     FROM RESERVA r
-     JOIN MESA m ON m.id_mesa = r.id_mesa
-     JOIN AMBIENTE a ON a.id_ambiente = m.id_ambiente
+     FROM reserva r
+     JOIN mesa m ON m.id_mesa = r.id_mesa
+     JOIN ambiente a ON a.id_ambiente = m.id_ambiente
      WHERE r.id_cliente = ? AND r.activo = 1
      ORDER BY r.fecha DESC, r.hora DESC`,
     [id_cliente]
@@ -20,10 +20,10 @@ async function listarPorCliente(id_cliente) {
 async function listarTodas({ fecha = null, estado = null } = {}) {
   let sql = `SELECT r.*, m.numero AS numero_mesa, a.nombre AS ambiente,
                     CONCAT(c.nombre, ' ', c.apellidos) AS cliente
-             FROM RESERVA r
-             JOIN MESA m ON m.id_mesa = r.id_mesa
-             JOIN AMBIENTE a ON a.id_ambiente = m.id_ambiente
-             JOIN CLIENTE c ON c.id_cliente = r.id_cliente
+             FROM reserva r
+             JOIN mesa m ON m.id_mesa = r.id_mesa
+             JOIN ambiente a ON a.id_ambiente = m.id_ambiente
+             JOIN cliente c ON c.id_cliente = r.id_cliente
              WHERE r.activo = 1`;
   const params = [];
   if (fecha) { sql += ' AND r.fecha = ?'; params.push(fecha); }
@@ -34,15 +34,15 @@ async function listarTodas({ fecha = null, estado = null } = {}) {
 }
 
 async function obtenerPorId(id) {
-  const [filas] = await pool.query('SELECT * FROM RESERVA WHERE id_reserva = ?', [id]);
+  const [filas] = await pool.query('SELECT * FROM reserva WHERE id_reserva = ?', [id]);
   return filas[0] || null;
 }
 
 async function obtenerPlatosDeReserva(id_reserva) {
   const [filas] = await pool.query(
-    `SELECT rp.id_producto, rp.cantidad, p.nombre, p.precio, p.imagen_url
-     FROM RESERVA_PRODUCTO rp
-     JOIN PRODUCTO_EMPLATADO p ON p.id_producto_emplatado = rp.id_producto
+    `SELECT rp.id_producto, rp.cantidad, p.nombre, p.costo AS precio, p.imagen_url
+     FROM reserva_producto rp
+     JOIN producto_emplatado p ON p.id_producto_emplatado = rp.id_producto
      WHERE rp.id_reserva = ?`,
     [id_reserva]
   );
@@ -52,7 +52,7 @@ async function obtenerPlatosDeReserva(id_reserva) {
 // Evita doble reserva de la misma mesa en la misma fecha/hora
 async function existeChoque({ id_mesa, fecha, hora }) {
   const [filas] = await pool.query(
-    `SELECT id_reserva FROM RESERVA
+    `SELECT id_reserva FROM reserva
      WHERE id_mesa = ? AND fecha = ? AND hora = ? AND estado IN ('PENDIENTE','CONFIRMADA') AND activo = 1`,
     [id_mesa, fecha, hora]
   );
@@ -63,8 +63,8 @@ async function existeChoque({ id_mesa, fecha, hora }) {
 async function reservadoEnFecha(id_producto, fecha) {
   const [filas] = await pool.query(
     `SELECT COALESCE(SUM(rp.cantidad), 0) AS total
-     FROM RESERVA_PRODUCTO rp
-     JOIN RESERVA r ON r.id_reserva = rp.id_reserva
+     FROM reserva_producto rp
+     JOIN reserva r ON r.id_reserva = rp.id_reserva
      WHERE rp.id_producto = ? AND r.fecha = ? AND r.activo = 1 AND r.estado <> 'CANCELADA'`,
     [id_producto, fecha]
   );
@@ -79,7 +79,7 @@ async function crear({ id_cliente, id_mesa, fecha, hora, cantidad_personas, moti
     await conexion.beginTransaction();
 
     const [resultado] = await conexion.query(
-      `INSERT INTO RESERVA (id_cliente, id_mesa, fecha, hora, cantidad_personas, motivo, estado, fecha_expiracion)
+      `INSERT INTO reserva (id_cliente, id_mesa, fecha, hora, cantidad_personas, motivo, estado, fecha_expiracion)
        VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE', DATE_ADD(NOW(), INTERVAL 30 MINUTE))`,
       [id_cliente, id_mesa, fecha, hora, cantidad_personas, motivo || null]
     );
@@ -87,7 +87,7 @@ async function crear({ id_cliente, id_mesa, fecha, hora, cantidad_personas, moti
 
     for (const item of platos) {
       const [[producto]] = await conexion.query(
-        'SELECT id_producto_emplatado AS id_producto, cupo_diario, estado FROM PRODUCTO_EMPLATADO WHERE id_producto_emplatado = ? FOR UPDATE',
+        'SELECT id_producto_emplatado AS id_producto, cupo_diario, estado FROM producto_emplatado WHERE id_producto_emplatado = ? FOR UPDATE',
         [item.id_producto]
       );
       if (!producto || !producto.estado) {
@@ -96,8 +96,8 @@ async function crear({ id_cliente, id_mesa, fecha, hora, cantidad_personas, moti
       if (producto.cupo_diario != null) {
         const [[{ total }]] = await conexion.query(
           `SELECT COALESCE(SUM(rp.cantidad), 0) AS total
-           FROM RESERVA_PRODUCTO rp
-           JOIN RESERVA r ON r.id_reserva = rp.id_reserva
+           FROM reserva_producto rp
+           JOIN reserva r ON r.id_reserva = rp.id_reserva
            WHERE rp.id_producto = ? AND r.fecha = ? AND r.activo = 1 AND r.estado <> 'CANCELADA'`,
           [item.id_producto, fecha]
         );
@@ -107,7 +107,7 @@ async function crear({ id_cliente, id_mesa, fecha, hora, cantidad_personas, moti
         }
       }
       await conexion.query(
-        'INSERT INTO RESERVA_PRODUCTO (id_reserva, id_producto, cantidad) VALUES (?, ?, ?)',
+        'INSERT INTO reserva_producto (id_reserva, id_producto, cantidad) VALUES (?, ?, ?)',
         [id_reserva, item.id_producto, item.cantidad]
       );
     }
@@ -125,7 +125,7 @@ async function crear({ id_cliente, id_mesa, fecha, hora, cantidad_personas, moti
 }
 
 async function cambiarEstado(id, estado) {
-  await pool.query('UPDATE RESERVA SET estado = ? WHERE id_reserva = ?', [estado, id]);
+  await pool.query('UPDATE reserva SET estado = ? WHERE id_reserva = ?', [estado, id]);
   return obtenerPorId(id);
 }
 
@@ -133,7 +133,7 @@ async function cambiarEstado(id, estado) {
 // cálculo de disponibilidad excluye reservas con estado CANCELADA.
 async function cancelar(id) {
   await pool.query(
-    "UPDATE RESERVA SET estado = 'CANCELADA', activo = 1 WHERE id_reserva = ?",
+    "UPDATE reserva SET estado = 'CANCELADA', activo = 1 WHERE id_reserva = ?",
     [id]
   );
   return obtenerPorId(id);

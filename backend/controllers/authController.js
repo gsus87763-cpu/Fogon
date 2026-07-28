@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const pool = require('../config/db');
 const { verificarIdTokenGoogle } = require('../utils/googleAuth');
 const { enviarCorreoRecuperacion } = require('../utils/mailer');
+const { generarCaptcha, verificarCaptcha } = require('../utils/captcha');
 
 const SALT_ROUNDS = 12;
 const RECUPERACION_TTL_MS = 60 * 60 * 1000; // 1 hora
@@ -40,11 +41,20 @@ async function registrarLogAcceso({ idEmpleado, estado, req }) {
   }
 }
 
+// GET /api/auth/captcha -> { captchaId, svg }
+function obtenerCaptcha(req, res) {
+  const { captchaId, svg } = generarCaptcha();
+  res.json({ captchaId, svg });
+}
+
 // POST /api/auth/registro  (siempre crea un CLIENTE; el personal se crea por el admin)
 async function registro(req, res) {
-  const { nombre, apellidos, ci, telefono, correo, password } = req.body;
+  const { nombre, apellidos, ci, telefono, correo, password, captchaId, captchaTexto } = req.body;
   if (!nombre || !apellidos || !correo || !password) {
     return res.status(400).json({ mensaje: 'nombre, apellidos, correo y password son obligatorios' });
+  }
+  if (!captchaId || !captchaTexto || !verificarCaptcha(captchaId, captchaTexto)) {
+    return res.status(400).json({ mensaje: 'El captcha es incorrecto o expiró, inténtalo de nuevo' });
   }
   try {
     const [existente] = await pool.query('SELECT id_cliente FROM cliente WHERE correo = ?', [correo]);
@@ -69,8 +79,11 @@ async function registro(req, res) {
 // POST /api/auth/login  { correo, password }
 // Busca primero en empleado (personal interno) y luego en cliente.
 async function login(req, res) {
-  const { correo, password } = req.body;
+  const { correo, password, captchaId, captchaTexto } = req.body;
   if (!correo || !password) return res.status(400).json({ mensaje: 'correo y password son obligatorios' });
+  if (!captchaId || !captchaTexto || !verificarCaptcha(captchaId, captchaTexto)) {
+    return res.status(400).json({ mensaje: 'El captcha es incorrecto o expiró, inténtalo de nuevo' });
+  }
 
   try {
     const [empleados] = await pool.query(
@@ -246,5 +259,5 @@ async function restablecerPassword(req, res) {
 }
 
 module.exports = {
-  registro, login, logout, loginGoogle, solicitarRecuperacion, restablecerPassword
+  obtenerCaptcha, registro, login, logout, loginGoogle, solicitarRecuperacion, restablecerPassword
 };

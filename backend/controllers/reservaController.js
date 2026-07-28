@@ -12,9 +12,15 @@ function validarDatosReserva({ id_mesa, fecha, hora, cantidad_personas }) {
   return errores;
 }
 
+// El JWT (ver authController.firmarToken) ya trae tipo_cuenta/id_cuenta;
+// no existe ninguna tabla USUARIO en este esquema.
+function idClienteDelToken(user) {
+  return user && user.tipo_cuenta === 'CLIENTE' ? user.id_cuenta : null;
+}
+
 async function misReservas(req, res) {
   try {
-    const idCliente = req.user.id_usuario ? await obtenerIdClienteDeUsuario(req.user) : null;
+    const idCliente = idClienteDelToken(req.user);
     if (!idCliente) return res.status(403).json({ mensaje: 'Solo disponible para clientes' });
     const reservas = await reservaModel.listarPorCliente(idCliente);
     res.json(reservas);
@@ -22,13 +28,6 @@ async function misReservas(req, res) {
     console.error(err);
     res.status(500).json({ mensaje: 'Error al listar reservas' });
   }
-}
-
-// Helper: dado el usuario del token, resuelve su id_cliente real
-const pool = require('../config/db');
-async function obtenerIdClienteDeUsuario(user) {
-  const [filas] = await pool.query('SELECT id_cliente FROM USUARIO WHERE id_usuario = ?', [user.id_usuario]);
-  return filas[0]?.id_cliente || null;
 }
 
 async function listarTodas(req, res) {
@@ -47,7 +46,7 @@ async function crear(req, res) {
     const errores = validarDatosReserva(req.body);
     if (errores.length > 0) return res.status(400).json({ mensaje: 'Datos inválidos', errores });
 
-    const idCliente = await obtenerIdClienteDeUsuario(req.user);
+    const idCliente = idClienteDelToken(req.user);
     if (!idCliente) return res.status(403).json({ mensaje: 'Solo los clientes pueden reservar' });
 
     const choque = await reservaModel.existeChoque(req.body);
@@ -85,6 +84,17 @@ async function confirmar(req, res) {
 
 async function cancelar(req, res) {
   try {
+    const existente = await reservaModel.obtenerPorId(req.params.id);
+    if (!existente) return res.status(404).json({ mensaje: 'Reserva no encontrada' });
+
+    // Un cliente solo puede cancelar sus propias reservas; el personal
+    // (admin/salon) puede cancelar cualquiera.
+    const idCliente = idClienteDelToken(req.user);
+    const esPersonalAutorizado = ['admin', 'salon'].includes(req.user.rol);
+    if (idCliente && existente.id_cliente !== idCliente && !esPersonalAutorizado) {
+      return res.status(403).json({ mensaje: 'No puedes cancelar la reserva de otro cliente' });
+    }
+
     const reserva = await reservaModel.cancelar(req.params.id);
     res.json(reserva);
   } catch (err) {

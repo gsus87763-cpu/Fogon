@@ -6,7 +6,7 @@ async function reservasPorDia(req, res) {
   try {
     const [filas] = await pool.query(
       `SELECT fecha, COUNT(*) AS total_reservas
-       FROM RESERVA
+       FROM reserva
        WHERE activo = 1 AND fecha >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
        GROUP BY fecha
        ORDER BY fecha ASC`
