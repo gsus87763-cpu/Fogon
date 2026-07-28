@@ -4,7 +4,7 @@ const productoModel = require('../models/productoModel');
 async function listar(req, res) {
   try {
     const incluirInactivos = req.query.incluirInactivos === 'true';
-    const categoria = req.query.categoria || null;
+    const categoria = req.query.categoria && req.query.categoria !== 'Todas' ? req.query.categoria : null;
     const productos = await productoModel.listar({ incluirInactivos, categoria });
     res.json(productos);
   } catch (err) {
@@ -26,6 +26,9 @@ async function obtener(req, res) {
 
 async function crear(req, res) {
   try {
+    if (!req.body.nombre || !req.body.precio) {
+      return res.status(400).json({ mensaje: 'nombre y precio son obligatorios' });
+    }
     const producto = await productoModel.crear(req.body);
     res.status(201).json(producto);
   } catch (err) {
@@ -46,7 +49,6 @@ async function actualizar(req, res) {
   }
 }
 
-// DELETE lógico: nunca borra la fila, solo marca estado = 0
 async function eliminar(req, res) {
   try {
     const existente = await productoModel.obtenerPorId(req.params.id);

@@ -1,82 +1,60 @@
 const pool = require('../config/db');
 
-// Por defecto solo devuelve productos activos (estado = 1), con la cantidad ya
-// reservada HOY (para calcular cupo restante) cuando el producto tiene cupo_diario.
-// El "reinicio diario" del stock no requiere un job: al filtrar por fecha = hoy,
-// cada nuevo día empieza a contar desde cero automáticamente.
-async function listar({ incluirInactivos = false, categoria = null } = {}) {
-  let sql = `
-    SELECT p.*, c.nombre AS nombre_carta,
-           COALESCE(SUM(CASE
-             WHEN r.fecha = CURDATE() AND r.activo = 1 AND r.estado <> 'CANCELADA'
-             THEN rp.cantidad ELSE 0
-           END), 0) AS reservado_hoy
-    FROM PRODUCTO p
-    JOIN CARTA c ON c.id_carta = p.id_carta
-    LEFT JOIN RESERVA_PRODUCTO rp ON rp.id_producto = p.id_producto
-    LEFT JOIN RESERVA r ON r.id_reserva = rp.id_reserva
-    WHERE 1=1`;
-  const params = [];
+// "producto_emplatado" es la carta de platos (lo que antes era PRODUCTO).
+// Se expone como id_producto/precio para no romper el frontend existente.
+const SELECT_BASE = `
+  SELECT pe.id_producto_emplatado AS id_producto,
+         pe.nombre, pe.descripcion, pe.categoria, pe.costo AS precio,
+         pe.imagen_url, pe.estado, pe.id_carta,
+         c.nombre AS nombre_carta
+  FROM producto_emplatado pe
+  LEFT JOIN carta c ON c.id_carta = pe.id_carta
+  WHERE 1=1`;
 
-  if (!incluirInactivos) sql += ' AND p.estado = 1';
-  if (categoria) {
-    sql += ' AND p.categoria = ?';
-    params.push(categoria);
-  }
-  sql += ' GROUP BY p.id_producto ORDER BY p.categoria, p.nombre';
+async function listar({ incluirInactivos = false, categoria = null } = {}) {
+  let sql = SELECT_BASE;
+  const params = [];
+  if (!incluirInactivos) sql += ' AND pe.estado = 1';
+  if (categoria) { sql += ' AND pe.categoria = ?'; params.push(categoria); }
+  sql += ' ORDER BY pe.categoria, pe.nombre';
 
   const [filas] = await pool.query(sql, params);
-  return filas.map((p) => ({
-    ...p,
-    disponible_hoy: p.cupo_diario == null ? null : Math.max(0, p.cupo_diario - Number(p.reservado_hoy))
-  }));
+  return filas;
 }
 
 async function obtenerPorId(id) {
-  const [filas] = await pool.query('SELECT * FROM PRODUCTO WHERE id_producto = ?', [id]);
+  const [filas] = await pool.query(`${SELECT_BASE} AND pe.id_producto_emplatado = ?`, [id]);
   return filas[0] || null;
 }
 
-// Cuánto de este producto ya se reservó hoy (reservas activas, no canceladas)
-async function reservadoHoy(id_producto) {
-  const [filas] = await pool.query(
-    `SELECT COALESCE(SUM(rp.cantidad), 0) AS total
-     FROM RESERVA_PRODUCTO rp
-     JOIN RESERVA r ON r.id_reserva = rp.id_reserva
-     WHERE rp.id_producto = ? AND r.fecha = CURDATE() AND r.activo = 1 AND r.estado <> 'CANCELADA'`,
-    [id_producto]
-  );
-  return Number(filas[0].total);
-}
-
-async function crear({ id_carta, nombre, descripcion, categoria, precio, unidad_de_medida, imagen_url, cupo_diario }) {
+async function crear({ id_carta, nombre, descripcion, categoria, precio, imagen_url }) {
   const [resultado] = await pool.query(
-    `INSERT INTO PRODUCTO (id_carta, nombre, descripcion, categoria, precio, unidad_de_medida, imagen_url, cupo_diario, estado)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-    [id_carta, nombre, descripcion || null, categoria, precio, unidad_de_medida || null, imagen_url || null, cupo_diario ?? null]
+    `INSERT INTO producto_emplatado (nombre, descripcion, categoria, costo, imagen_url, estado, id_carta)
+     VALUES (?, ?, ?, ?, ?, 1, ?)`,
+    [nombre, descripcion || null, categoria || null, precio, imagen_url || null, id_carta || null]
   );
   return obtenerPorId(resultado.insertId);
 }
 
-async function actualizar(id, { nombre, descripcion, categoria, precio, unidad_de_medida, imagen_url, cupo_diario }) {
+async function actualizar(id, { nombre, descripcion, categoria, precio, imagen_url, id_carta }) {
   await pool.query(
-    `UPDATE PRODUCTO SET nombre = ?, descripcion = ?, categoria = ?, precio = ?, unidad_de_medida = ?,
-            imagen_url = ?, cupo_diario = ?
-     WHERE id_producto = ?`,
-    [nombre, descripcion || null, categoria, precio, unidad_de_medida || null, imagen_url || null, cupo_diario ?? null, id]
+    `UPDATE producto_emplatado
+        SET nombre = ?, descripcion = ?, categoria = ?, costo = ?, imagen_url = ?, id_carta = ?
+      WHERE id_producto_emplatado = ?`,
+    [nombre, descripcion || null, categoria || null, precio, imagen_url || null, id_carta || null, id]
   );
   return obtenerPorId(id);
 }
 
-// "Eliminar" = soft delete (estado = 0), nunca DELETE físico
+// "Eliminar" = baja lógica (estado = 0), nunca DELETE físico
 async function eliminarLogico(id) {
-  await pool.query('UPDATE PRODUCTO SET estado = 0 WHERE id_producto = ?', [id]);
+  await pool.query('UPDATE producto_emplatado SET estado = 0 WHERE id_producto_emplatado = ?', [id]);
   return obtenerPorId(id);
 }
 
 async function restaurar(id) {
-  await pool.query('UPDATE PRODUCTO SET estado = 1 WHERE id_producto = ?', [id]);
+  await pool.query('UPDATE producto_emplatado SET estado = 1 WHERE id_producto_emplatado = ?', [id]);
   return obtenerPorId(id);
 }
 
-module.exports = { listar, obtenerPorId, reservadoHoy, crear, actualizar, eliminarLogico, restaurar };
+module.exports = { listar, obtenerPorId, crear, actualizar, eliminarLogico, restaurar };

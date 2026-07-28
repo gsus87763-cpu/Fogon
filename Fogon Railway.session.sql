@@ -1,9 +1,9 @@
 -- =====================================================================
 -- EL FOGÓN — Base de datos (versión oficial del equipo + extensiones)
 -- =====================================================================
-DROP DATABASE IF EXISTS el_fogon;
-CREATE DATABASE el_fogon CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE el_fogon;
+DROP DATABASE IF EXISTS railway;
+CREATE DATABASE railway CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE railway;
 
 -- phpMyAdmin SQL Dump (fuente: dump real del equipo, tablas en minúscula)
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -596,12 +596,6 @@ INSERT INTO `producto_emplatado` (`nombre`, `descripcion`, `categoria`, `costo`,
 UPDATE `ambiente` SET imagen_url = 'https://images.unsplash.com/photo-1701722952679-beffce26d77a?auto=format&fit=crop&q=80&w=1000' WHERE id_ambiente = 1;
 UPDATE `ambiente` SET imagen_url = 'https://images.unsplash.com/photo-1756680967373-c3205a8a8b31?auto=format&fit=crop&q=80&w=1000' WHERE id_ambiente = 2;
 UPDATE `ambiente` SET imagen_url = 'https://images.unsplash.com/photo-1762765685319-fdaf8d22085d?auto=format&fit=crop&q=80&w=1000' WHERE id_ambiente = 3;
-
--- Área "Caja" para poder probar el rol 'caja' con un empleado real (Jorge,
--- id_empleado 5). El rol de un empleado se deduce de qué área tiene a su
--- cargo (ver obtenerRolEmpleado en authController.js).
-INSERT INTO `area` (`nombre`, `capacidad_personal`, `id_responsable`, `objetivo`) VALUES
-('Caja', 2, 5, 'Cobros y facturación en el punto de venta');
 
 -- ===================== FUNCIONES =====================
 DELIMITER $$
