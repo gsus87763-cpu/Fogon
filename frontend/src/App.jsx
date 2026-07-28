@@ -9,6 +9,8 @@ import Eventos from './pages/Eventos.jsx';
 import SobreNosotros from './pages/SobreNosotros.jsx';
 import Login from './pages/Login.jsx';
 import Registro from './pages/Registro.jsx';
+import RecuperarPassword from './pages/RecuperarPassword.jsx';
+import RestablecerPassword from './pages/RestablecerPassword.jsx';
 import Reservas from './pages/Reservas.jsx';
 import Panel from './pages/Panel.jsx';
 import PanelProductos from './pages/PanelProductos.jsx';
@@ -26,6 +28,8 @@ export default function App() {
         <Route path="/sobre-nosotros" element={<SobreNosotros />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
+        <Route path="/recuperar-password" element={<RecuperarPassword />} />
+        <Route path="/restablecer-password" element={<RestablecerPassword />} />
         <Route path="/reservas" element={<Reservas />} />
 
         <Route path="/panel" element={<RutaProtegida><Panel /></RutaProtegida>} />
