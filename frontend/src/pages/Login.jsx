@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext.jsx';
 import { IconoAdvertencia, IconoRefrescar } from '../components/Icons.jsx';
+import BotonGoogle from '../components/BotonGoogle.jsx';
 
 function validarCorreo(correo) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
@@ -120,6 +121,15 @@ export default function Login() {
           <button className="boton boton-primario boton-ancho" disabled={enviando}>
             {enviando ? 'Ingresando…' : 'Ingresar'}
           </button>
+
+          <p style={{ fontSize: '.9rem', textAlign: 'center', marginTop: 4 }}>
+            <Link to="/recuperar-password">¿Olvidaste tu contraseña?</Link>
+          </p>
+
+          <BotonGoogle
+            onExito={(datos) => { iniciarSesion(datos); navigate('/panel'); }}
+            onError={(msg) => setError(msg)}
+          />
 
           <p style={{ fontSize: '.9rem', textAlign: 'center' }}>
             ¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link>

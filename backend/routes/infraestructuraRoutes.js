@@ -26,10 +26,4 @@ router.get('/empleados', verificarToken, permitirRoles('admin', 'rrhh'), asyncHa
   res.json(filas);
 }));
 
-// Interno: ingredientes (almacén / cocina)
-router.get('/ingredientes', verificarToken, permitirRoles('admin', 'almacen', 'cocina'), asyncHandler(async (req, res) => {
-  const [filas] = await pool.query('SELECT * FROM INGREDIENTE WHERE activo = 1 ORDER BY nombre');
-  res.json(filas);
-}));
-
 module.exports = router;

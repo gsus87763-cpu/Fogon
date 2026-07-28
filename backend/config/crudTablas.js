@@ -20,7 +20,7 @@ const TABLAS = {
   registro_cargo: { pk: 'id_registro', columnas: ['id_empleado', 'tipo_cargo_actual', 'fecha', 'motivo', 'tipo_cargo_anterior'] },
   asistencia: { pk: 'id_asistencia', columnas: ['id_empleado', 'fecha', 'hora_ingreso', 'hora_salida'] },
   area: { pk: 'id_area', columnas: ['nombre', 'capacidad_personal', 'id_responsable', 'objetivo'] },
-  ambiente: { pk: 'id_ambiente', columnas: ['nombre', 'horario_funcionamiento', 'caracteristica', 'capacidad'] },
+  ambiente: { pk: 'id_ambiente', columnas: ['nombre', 'horario_funcionamiento', 'caracteristica', 'capacidad', 'imagen_url'] },
   mesa: { pk: 'id_mesa', columnas: ['id_ambiente', 'capacidad_maxima', 'estado'] },
   cocina: { pk: 'id_cocina', columnas: ['id_area', 'cantidad_personal', 'nombre', 'descripcion_funcion', 'estado', 'horario_funcionamiento', 'id_responsable'] },
   equipamiento: { pk: 'id_equipamiento', columnas: ['nombre', 'modelo', 'marca', 'fabricante', 'tipo', 'numero_serie'] },

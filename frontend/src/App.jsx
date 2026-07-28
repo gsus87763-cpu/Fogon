@@ -9,11 +9,16 @@ import Eventos from './pages/Eventos.jsx';
 import SobreNosotros from './pages/SobreNosotros.jsx';
 import Login from './pages/Login.jsx';
 import Registro from './pages/Registro.jsx';
+import RecuperarPassword from './pages/RecuperarPassword.jsx';
+import RestablecerPassword from './pages/RestablecerPassword.jsx';
 import Reservas from './pages/Reservas.jsx';
 import Panel from './pages/Panel.jsx';
 import PanelProductos from './pages/PanelProductos.jsx';
 import PanelReservasSalon from './pages/PanelReservasSalon.jsx';
 import PanelEstadisticas from './pages/PanelEstadisticas.jsx';
+import PanelClientes from './pages/PanelClientes.jsx';
+import PanelFinanzas from './pages/PanelFinanzas.jsx';
+import PanelAmbientes from './pages/PanelAmbientes.jsx';
 
 export default function App() {
   return (
@@ -26,6 +31,8 @@ export default function App() {
         <Route path="/sobre-nosotros" element={<SobreNosotros />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
+        <Route path="/recuperar-password" element={<RecuperarPassword />} />
+        <Route path="/restablecer-password" element={<RestablecerPassword />} />
         <Route path="/reservas" element={<Reservas />} />
 
         <Route path="/panel" element={<RutaProtegida><Panel /></RutaProtegida>} />
@@ -37,6 +44,15 @@ export default function App() {
         } />
         <Route path="/panel/estadisticas" element={
           <RutaProtegida rolesPermitidos={['admin', 'caja']}><PanelEstadisticas /></RutaProtegida>
+        } />
+        <Route path="/panel/clientes" element={
+          <RutaProtegida rolesPermitidos={['admin']}><PanelClientes /></RutaProtegida>
+        } />
+        <Route path="/panel/finanzas" element={
+          <RutaProtegida rolesPermitidos={['admin', 'caja', 'rrhh', 'almacen']}><PanelFinanzas /></RutaProtegida>
+        } />
+        <Route path="/panel/ambientes" element={
+          <RutaProtegida rolesPermitidos={['admin']}><PanelAmbientes /></RutaProtegida>
         } />
 
         <Route path="*" element={<Home />} />

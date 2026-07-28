@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { IconoAdvertencia, IconoCheck, IconoCirculo, IconoRefrescar } from '../components/Icons.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import BotonGoogle from '../components/BotonGoogle.jsx';
 
 function evaluarFortalezaLocal(password) {
   const detalles = {
@@ -41,6 +43,7 @@ export default function Registro() {
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const { iniciarSesion } = useAuth();
   const navigate = useNavigate();
 
   const fortaleza = evaluarFortalezaLocal(form.password);
@@ -230,6 +233,11 @@ export default function Registro() {
           <button className="boton boton-primario boton-ancho" disabled={enviando}>
             {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
           </button>
+
+          <BotonGoogle
+            onExito={(datos) => { iniciarSesion(datos); navigate('/panel'); }}
+            onError={(msg) => setError(msg)}
+          />
 
           <p style={{ fontSize: '.9rem', textAlign: 'center' }}>
             ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>

@@ -4,12 +4,12 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 const adminTablasRoutes = require('./routes/adminTablasRoutes');
-// PENDIENTES DE PORTAR al nuevo esquema (usan nombres de tabla del diseño
-// anterior: RESERVA_PRODUCTO, PRODUCTO con id_carta, etc. — ya no existen así):
-// const productoRoutes = require('./routes/productoRoutes');
-// const reservaRoutes = require('./routes/reservaRoutes');
-// const estadisticaRoutes = require('./routes/estadisticaRoutes');
-// const infraestructuraRoutes = require('./routes/infraestructuraRoutes');
+const productoRoutes = require('./routes/productoRoutes');
+const reservaRoutes = require('./routes/reservaRoutes');
+const estadisticaRoutes = require('./routes/estadisticaRoutes');
+const infraestructuraRoutes = require('./routes/infraestructuraRoutes');
+const clienteRoutes = require('./routes/clienteRoutes');
+const financeRoutes = require('./routes/financeRoutes');
 
 const app = express();
 
@@ -20,6 +20,12 @@ app.get('/api/health', (req, res) => res.json({ estado: 'ok', servicio: 'El Fog�
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin-tablas', adminTablasRoutes);
+app.use('/api/productos', productoRoutes);
+app.use('/api/reservas', reservaRoutes);
+app.use('/api/estadisticas', estadisticaRoutes);
+app.use('/api', infraestructuraRoutes); // /api/ambientes, /api/mesas, /api/empleados
+app.use('/api/clientes', clienteRoutes);
+app.use('/api/finanzas', financeRoutes);
 
 // Manejador de errores genérico
 app.use((err, req, res, next) => {

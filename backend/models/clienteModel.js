@@ -44,36 +44,16 @@ async function actualizar(id, { nombre, apellidos, ci, telefono, correo }) {
   return obtenerPorId(id);
 }
 
-// "Eliminar" = baja lógica; también desactiva su cuenta de USUARIO si tiene una
+// "Eliminar" = baja lógica (activo = 0). No hay una tabla USUARIO separada
+// en este esquema: el login/rol se resuelve directo contra CLIENTE/EMPLEADO
+// (ver authController.js), así que basta con desactivar aquí.
 async function eliminarLogico(id) {
-  const conexion = await pool.getConnection();
-  try {
-    await conexion.beginTransaction();
-    await conexion.query('UPDATE CLIENTE SET activo = 0 WHERE id_cliente = ?', [id]);
-    await conexion.query('UPDATE USUARIO SET activo = 0 WHERE id_cliente = ?', [id]);
-    await conexion.commit();
-  } catch (err) {
-    await conexion.rollback();
-    throw err;
-  } finally {
-    conexion.release();
-  }
+  await pool.query('UPDATE CLIENTE SET activo = 0 WHERE id_cliente = ?', [id]);
   return obtenerPorId(id);
 }
 
 async function restaurar(id) {
-  const conexion = await pool.getConnection();
-  try {
-    await conexion.beginTransaction();
-    await conexion.query('UPDATE CLIENTE SET activo = 1 WHERE id_cliente = ?', [id]);
-    await conexion.query('UPDATE USUARIO SET activo = 1 WHERE id_cliente = ?', [id]);
-    await conexion.commit();
-  } catch (err) {
-    await conexion.rollback();
-    throw err;
-  } finally {
-    conexion.release();
-  }
+  await pool.query('UPDATE CLIENTE SET activo = 1 WHERE id_cliente = ?', [id]);
   return obtenerPorId(id);
 }
 

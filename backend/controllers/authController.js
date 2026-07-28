@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const pool = require('../config/db');
 const { verificarIdTokenGoogle } = require('../utils/googleAuth');
 const { enviarCorreoRecuperacion } = require('../utils/mailer');
+const { verificarCaptcha } = require('../utils/captcha');
 
 const SALT_ROUNDS = 12;
 const RECUPERACION_TTL_MS = 60 * 60 * 1000; // 1 hora
@@ -42,9 +43,12 @@ async function registrarLogAcceso({ idEmpleado, estado, req }) {
 
 // POST /api/auth/registro  (siempre crea un CLIENTE; el personal se crea por el admin)
 async function registro(req, res) {
-  const { nombre, apellidos, ci, telefono, correo, password } = req.body;
+  const { nombre, apellidos, ci, telefono, correo, password, captchaId, captchaRespuesta } = req.body;
   if (!nombre || !apellidos || !correo || !password) {
     return res.status(400).json({ mensaje: 'nombre, apellidos, correo y password son obligatorios' });
+  }
+  if (!captchaId || !verificarCaptcha(captchaId, captchaRespuesta)) {
+    return res.status(400).json({ mensaje: 'Verificación de seguridad incorrecta o expirada' });
   }
   try {
     const [existente] = await pool.query('SELECT id_cliente FROM cliente WHERE correo = ?', [correo]);
@@ -69,8 +73,11 @@ async function registro(req, res) {
 // POST /api/auth/login  { correo, password }
 // Busca primero en empleado (personal interno) y luego en cliente.
 async function login(req, res) {
-  const { correo, password } = req.body;
+  const { correo, password, captchaId, captchaRespuesta } = req.body;
   if (!correo || !password) return res.status(400).json({ mensaje: 'correo y password son obligatorios' });
+  if (!captchaId || !verificarCaptcha(captchaId, captchaRespuesta)) {
+    return res.status(400).json({ mensaje: 'Verificación de seguridad incorrecta o expirada' });
+  }
 
   try {
     const [empleados] = await pool.query(
