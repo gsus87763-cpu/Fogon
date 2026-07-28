@@ -1,6 +1,3 @@
--- =====================================================================
--- EL FOGÓN — Base de datos (versión oficial del equipo + extensiones)
--- =====================================================================
 DROP DATABASE IF EXISTS railway;
 CREATE DATABASE railway CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE railway;
