@@ -12,7 +12,11 @@
 --     Es aditivo: no borra ni renombra nada de lo que ya tenías.
 -- =====================================================================
 
+<<<<<<< HEAD
 USE railway;
+=======
+USE el_fogon;
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
 
 -- ---------------------------------------------------------------------
 -- AMBIENTE: imagen para mostrar cada salón/terraza en el frontend.

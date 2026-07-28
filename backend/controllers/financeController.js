@@ -18,10 +18,16 @@ async function registrarPago(req, res) {
     if (!id_empleado || !concepto || !monto || !fecha_pago) {
       return res.status(400).json({ mensaje: 'id_empleado, concepto, monto y fecha_pago son obligatorios' });
     }
+<<<<<<< HEAD
     const idRegistradoPor = req.user.tipo_cuenta === 'EMPLEADO' ? req.user.id_cuenta : null;
     const pago = await financeModel.registrarPagoEmpleado({
       id_empleado, concepto, periodo, monto, fecha_pago,
       id_registrado_por: idRegistradoPor
+=======
+    const pago = await financeModel.registrarPagoEmpleado({
+      id_empleado, concepto, periodo, monto, fecha_pago,
+      id_registrado_por: req.user.id_empleado || null
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
     });
     res.status(201).json(pago);
   } catch (err) {

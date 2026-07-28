@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -20,12 +20,15 @@ export default function Login() {
   const { iniciarSesion } = useAuth();
   const navigate = useNavigate();
 
+<<<<<<< HEAD
   function cargarCaptcha() {
     setCaptchaTexto('');
     api.get('/auth/captcha').then((res) => setCaptcha(res.data)).catch(() => setCaptcha(null));
   }
   useEffect(cargarCaptcha, []);
 
+=======
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
   function errorDe(campo) {
     if (!tocado[campo]) return null;
     if (campo === 'correo') {
@@ -46,6 +49,7 @@ export default function Login() {
     setError('');
     setTocado({ correo: true, password: true });
     if (!validarCorreo(correo) || !password) return;
+<<<<<<< HEAD
     if (!captchaTexto) {
       setError('Ingresa el texto del captcha');
       return;
@@ -60,6 +64,15 @@ export default function Login() {
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.');
       cargarCaptcha();
+=======
+
+    setEnviando(true);
+    try {
+      const res = await api.post('/auth/login', { correo, password });
+      entrarConSesion(res.data);
+    } catch (err) {
+      setError(err.response?.data?.mensaje || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.');
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
     } finally {
       setEnviando(false);
     }
@@ -99,6 +112,7 @@ export default function Login() {
             <p style={{ fontSize: '.85rem', textAlign: 'right', marginTop: 6 }}>
               <Link to="/recuperar-password">¿Olvidaste tu contraseña?</Link>
             </p>
+<<<<<<< HEAD
           </div>
 
           <div className="campo">
@@ -120,6 +134,8 @@ export default function Login() {
               value={captchaTexto}
               onChange={(e) => setCaptchaTexto(e.target.value)}
             />
+=======
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
           </div>
 
           <button className="boton boton-primario boton-ancho" disabled={enviando}>

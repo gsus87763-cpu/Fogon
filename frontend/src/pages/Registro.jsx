@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -41,8 +41,11 @@ export default function Registro() {
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
   const [enviando, setEnviando] = useState(false);
+<<<<<<< HEAD
   const [captcha, setCaptcha] = useState(null);
   const [captchaTexto, setCaptchaTexto] = useState('');
+=======
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
   const { iniciarSesion } = useAuth();
   const navigate = useNavigate();
 
@@ -89,24 +92,30 @@ export default function Registro() {
       setError('Las contraseñas no coinciden.');
       return;
     }
+<<<<<<< HEAD
     if (!captchaTexto) {
       setError('Ingresa el texto del captcha');
       return;
     }
+=======
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
 
     setEnviando(true);
     try {
       const res = await api.post('/auth/registro', {
         nombre: form.nombre, apellidos: form.apellidos, correo: form.correo,
+<<<<<<< HEAD
         telefono: form.telefono, password: form.password,
         captchaId: captcha?.captchaId, captchaTexto
+=======
+        telefono: form.telefono, password: form.password
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
       });
       iniciarSesion(res.data);
       setExito('Cuenta creada correctamente. Te llevamos a tu panel…');
       setTimeout(() => navigate('/panel'), 1200);
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo completar el registro');
-      cargarCaptcha();
     } finally {
       setEnviando(false);
     }
@@ -211,6 +220,7 @@ export default function Registro() {
             )}
           </div>
 
+<<<<<<< HEAD
           <div className="campo">
             <label>Captcha</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -232,6 +242,8 @@ export default function Registro() {
             />
           </div>
 
+=======
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
           <button className="boton boton-primario boton-ancho" disabled={enviando}>
             {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
           </button>

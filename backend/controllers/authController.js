@@ -4,7 +4,10 @@ const crypto = require('crypto');
 const pool = require('../config/db');
 const { verificarIdTokenGoogle } = require('../utils/googleAuth');
 const { enviarCorreoRecuperacion } = require('../utils/mailer');
+<<<<<<< HEAD
 const { generarCaptcha, verificarCaptcha } = require('../utils/captcha');
+=======
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
 
 const SALT_ROUNDS = 12;
 const RECUPERACION_TTL_MS = 60 * 60 * 1000; // 1 hora
@@ -18,6 +21,7 @@ async function obtenerRolEmpleado(conexion, idEmpleado) {
   const [cocinero] = await conexion.query('SELECT 1 FROM cocinero WHERE id_empleado = ?', [idEmpleado]);
   if (cocinero.length > 0) return 'cocina';
   return 'staff';
+<<<<<<< HEAD
 }
 
 function firmarToken({ tipoCuenta, id, nombre, correo, rol }) {
@@ -83,7 +87,62 @@ async function login(req, res) {
   if (!correo || !password) return res.status(400).json({ mensaje: 'correo y password son obligatorios' });
   if (!captchaId || !captchaTexto || !verificarCaptcha(captchaId, captchaTexto)) {
     return res.status(400).json({ mensaje: 'El captcha es incorrecto o expiró, inténtalo de nuevo' });
+=======
+}
+
+function firmarToken({ tipoCuenta, id, nombre, correo, rol }) {
+  const payload = { tipo_cuenta: tipoCuenta, id_cuenta: id, rol, nombre, correo };
+  // Compatibilidad con el resto del backend, que lee req.user.rol
+  const token = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '8h'
+  });
+  return { token, payload };
+}
+
+async function registrarLogAcceso({ idEmpleado, estado, req }) {
+  if (!idEmpleado) return; // el log_acceso del dump solo soporta empleados
+  try {
+    await pool.query(
+      'INSERT INTO log_acceso (fecha, estado, ip, tipo_acceso, id_empleado) VALUES (CURDATE(), ?, ?, ?, ?)',
+      [estado, req.ip, 'WEB', idEmpleado]
+    );
+  } catch (err) {
+    console.error('No se pudo registrar el log de acceso:', err.message);
   }
+}
+
+// POST /api/auth/registro  (siempre crea un CLIENTE; el personal se crea por el admin)
+async function registro(req, res) {
+  const { nombre, apellidos, ci, telefono, correo, password } = req.body;
+  if (!nombre || !apellidos || !correo || !password) {
+    return res.status(400).json({ mensaje: 'nombre, apellidos, correo y password son obligatorios' });
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
+  }
+  try {
+    const [existente] = await pool.query('SELECT id_cliente FROM cliente WHERE correo = ?', [correo]);
+    if (existente.length > 0) return res.status(409).json({ mensaje: 'Ya existe una cuenta con ese correo' });
+
+    const hash = await bcrypt.hash(password, SALT_ROUNDS);
+    const [resultado] = await pool.query(
+      'INSERT INTO cliente (nombre, apellidos, ci, telefono, correo, contrasenia) VALUES (?, ?, ?, ?, ?, ?)',
+      [nombre, apellidos, ci || null, telefono || null, correo, hash]
+    );
+
+    const { token, payload } = firmarToken({
+      tipoCuenta: 'CLIENTE', id: resultado.insertId, nombre, correo, rol: 'cliente'
+    });
+    res.status(201).json({ token, usuario: payload });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ mensaje: 'Error al registrar la cuenta' });
+  }
+}
+
+// POST /api/auth/login  { correo, password }
+// Busca primero en empleado (personal interno) y luego en cliente.
+async function login(req, res) {
+  const { correo, password } = req.body;
+  if (!correo || !password) return res.status(400).json({ mensaje: 'correo y password son obligatorios' });
 
   try {
     const [empleados] = await pool.query(
@@ -259,5 +318,9 @@ async function restablecerPassword(req, res) {
 }
 
 module.exports = {
+<<<<<<< HEAD
   obtenerCaptcha, registro, login, logout, loginGoogle, solicitarRecuperacion, restablecerPassword
+=======
+  registro, login, logout, loginGoogle, solicitarRecuperacion, restablecerPassword
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
 };

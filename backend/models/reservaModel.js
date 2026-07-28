@@ -40,9 +40,15 @@ async function obtenerPorId(id) {
 
 async function obtenerPlatosDeReserva(id_reserva) {
   const [filas] = await pool.query(
+<<<<<<< HEAD
     `SELECT rp.id_producto, rp.cantidad, p.nombre, p.costo AS precio, p.imagen_url
      FROM reserva_producto rp
      JOIN producto_emplatado p ON p.id_producto_emplatado = rp.id_producto
+=======
+    `SELECT rp.id_producto, rp.cantidad, p.nombre, p.precio, p.imagen_url
+     FROM RESERVA_PRODUCTO rp
+     JOIN PRODUCTO_EMPLATADO p ON p.id_producto_emplatado = rp.id_producto
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
      WHERE rp.id_reserva = ?`,
     [id_reserva]
   );
@@ -87,7 +93,11 @@ async function crear({ id_cliente, id_mesa, fecha, hora, cantidad_personas, moti
 
     for (const item of platos) {
       const [[producto]] = await conexion.query(
+<<<<<<< HEAD
         'SELECT id_producto_emplatado AS id_producto, cupo_diario, estado FROM producto_emplatado WHERE id_producto_emplatado = ? FOR UPDATE',
+=======
+        'SELECT id_producto_emplatado AS id_producto, cupo_diario, estado FROM PRODUCTO_EMPLATADO WHERE id_producto_emplatado = ? FOR UPDATE',
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
         [item.id_producto]
       );
       if (!producto || !producto.estado) {

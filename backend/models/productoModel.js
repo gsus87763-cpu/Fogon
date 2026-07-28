@@ -5,7 +5,11 @@ const pool = require('../config/db');
 const SELECT_BASE = `
   SELECT pe.id_producto_emplatado AS id_producto,
          pe.nombre, pe.descripcion, pe.categoria, pe.costo AS precio,
+<<<<<<< HEAD
          pe.imagen_url, pe.estado, pe.cupo_diario, pe.id_carta,
+=======
+         pe.imagen_url, pe.estado, pe.id_carta,
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
          c.nombre AS nombre_carta
   FROM producto_emplatado pe
   LEFT JOIN carta c ON c.id_carta = pe.id_carta
@@ -27,21 +31,38 @@ async function obtenerPorId(id) {
   return filas[0] || null;
 }
 
+<<<<<<< HEAD
 async function crear({ id_carta, nombre, descripcion, categoria, precio, imagen_url, cupo_diario }) {
   const [resultado] = await pool.query(
     `INSERT INTO producto_emplatado (nombre, descripcion, categoria, costo, imagen_url, cupo_diario, estado, id_carta)
      VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
     [nombre, descripcion || null, categoria || null, precio, imagen_url || null, cupo_diario ?? null, id_carta || null]
+=======
+async function crear({ id_carta, nombre, descripcion, categoria, precio, imagen_url }) {
+  const [resultado] = await pool.query(
+    `INSERT INTO producto_emplatado (nombre, descripcion, categoria, costo, imagen_url, estado, id_carta)
+     VALUES (?, ?, ?, ?, ?, 1, ?)`,
+    [nombre, descripcion || null, categoria || null, precio, imagen_url || null, id_carta || null]
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
   );
   return obtenerPorId(resultado.insertId);
 }
 
+<<<<<<< HEAD
 async function actualizar(id, { nombre, descripcion, categoria, precio, imagen_url, cupo_diario, id_carta }) {
   await pool.query(
     `UPDATE producto_emplatado
         SET nombre = ?, descripcion = ?, categoria = ?, costo = ?, imagen_url = ?, cupo_diario = ?, id_carta = ?
       WHERE id_producto_emplatado = ?`,
     [nombre, descripcion || null, categoria || null, precio, imagen_url || null, cupo_diario ?? null, id_carta || null, id]
+=======
+async function actualizar(id, { nombre, descripcion, categoria, precio, imagen_url, id_carta }) {
+  await pool.query(
+    `UPDATE producto_emplatado
+        SET nombre = ?, descripcion = ?, categoria = ?, costo = ?, imagen_url = ?, id_carta = ?
+      WHERE id_producto_emplatado = ?`,
+    [nombre, descripcion || null, categoria || null, precio, imagen_url || null, id_carta || null, id]
+>>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
   );
   return obtenerPorId(id);
 }
