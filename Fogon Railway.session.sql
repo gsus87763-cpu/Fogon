@@ -597,6 +597,12 @@ UPDATE `ambiente` SET imagen_url = 'https://images.unsplash.com/photo-1701722952
 UPDATE `ambiente` SET imagen_url = 'https://images.unsplash.com/photo-1756680967373-c3205a8a8b31?auto=format&fit=crop&q=80&w=1000' WHERE id_ambiente = 2;
 UPDATE `ambiente` SET imagen_url = 'https://images.unsplash.com/photo-1762765685319-fdaf8d22085d?auto=format&fit=crop&q=80&w=1000' WHERE id_ambiente = 3;
 
+-- Área "Caja" para poder probar el rol 'caja' con un empleado real (Jorge,
+-- id_empleado 5). El rol de un empleado se deduce de qué área tiene a su
+-- cargo (ver obtenerRolEmpleado en authController.js).
+INSERT INTO `area` (`nombre`, `capacidad_personal`, `id_responsable`, `objetivo`) VALUES
+('Caja', 2, 5, 'Cobros y facturación en el punto de venta');
+
 -- ===================== FUNCIONES =====================
 DELIMITER $$
 CREATE FUNCTION `fn_calcular_edad`(p_fecha_nacimiento DATE)

@@ -1,9 +1,9 @@
 -- =====================================================================
 -- EL FOGÓN — Base de datos (versión oficial del equipo + extensiones)
 -- =====================================================================
-DROP DATABASE IF EXISTS el_fogon;
-CREATE DATABASE el_fogon CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE el_fogon;
+DROP DATABASE IF EXISTS railway;
+CREATE DATABASE railway CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE railway;
 
 -- phpMyAdmin SQL Dump (fuente: dump real del equipo, tablas en minúscula)
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
