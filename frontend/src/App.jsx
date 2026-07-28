@@ -19,6 +19,7 @@ import PanelEstadisticas from './pages/PanelEstadisticas.jsx';
 import PanelClientes from './pages/PanelClientes.jsx';
 import PanelAmbientes from './pages/PanelAmbientes.jsx';
 import PanelFinanzas from './pages/PanelFinanzas.jsx';
+import PanelTablas from './pages/PanelTablas.jsx';
 
 export default function App() {
   return (
@@ -53,6 +54,9 @@ export default function App() {
         } />
         <Route path="/panel/finanzas" element={
           <RutaProtegida rolesPermitidos={['admin', 'caja']}><PanelFinanzas /></RutaProtegida>
+        } />
+        <Route path="/panel/tablas" element={
+          <RutaProtegida rolesPermitidos={['admin', 'cocina', 'almacen', 'salon', 'caja', 'staff']}><PanelTablas /></RutaProtegida>
         } />
 
         <Route path="*" element={<Home />} />

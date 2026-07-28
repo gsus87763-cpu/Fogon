@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 const ACCESOS_POR_ROL = {
   admin: [
+    { to: '/panel/tablas', titulo: 'Todas las tablas', desc: 'Ver, crear, editar y eliminar cualquier tabla de la BD, con exportación a Excel y PDF' },
     { to: '/panel/productos', titulo: 'Carta / Productos', desc: 'CRUD con eliminación lógica' },
     { to: '/panel/reservas-salon', titulo: 'Reservas y mesas', desc: 'Confirmar o revisar reservas' },
     { to: '/panel/estadisticas', titulo: 'Reportes y estadísticas', desc: 'Gráficos y reporte PDF' },
@@ -14,14 +15,20 @@ const ACCESOS_POR_ROL = {
     { to: '/panel/reservas-salon', titulo: 'Reservas y mesas', desc: 'Confirmar reservas del día' }
   ],
   cocina: [
-    { to: '/panel/productos', titulo: 'Carta / Productos', desc: 'Mantener platos y precios' }
+    { to: '/panel/productos', titulo: 'Carta / Productos', desc: 'Mantener platos y precios' },
+    { to: '/panel/tablas', titulo: 'Mis tablas', desc: 'Cocinero, certificaciones, cocina, asistencia y producto emplatado' }
   ],
   almacen: [
-    { to: '/panel/productos', titulo: 'Carta / Productos', desc: 'Consultar disponibilidad de platos' }
+    { to: '/panel/productos', titulo: 'Carta / Productos', desc: 'Consultar disponibilidad de platos' },
+    { to: '/panel/tablas', titulo: 'Mis tablas', desc: 'Almacén, producto y compras' }
   ],
   caja: [
     { to: '/panel/estadisticas', titulo: 'Reportes y estadísticas', desc: 'Ingresos y reporte PDF' },
-    { to: '/panel/finanzas', titulo: 'Finanzas', desc: 'Pagos, facturas y compras' }
+    { to: '/panel/finanzas', titulo: 'Finanzas', desc: 'Pagos, facturas y compras' },
+    { to: '/panel/tablas', titulo: 'Mis tablas', desc: 'Pedidos, facturas y clientes' }
+  ],
+  staff: [
+    { to: '/panel/tablas', titulo: 'Mi asistencia', desc: 'Registrar y ver tu asistencia' }
   ],
   cliente: [
     { to: '/reservas', titulo: 'Mis reservas', desc: 'Ver, crear o cancelar reservas' }
