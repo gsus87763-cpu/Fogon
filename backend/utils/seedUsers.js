@@ -51,6 +51,7 @@ async function ejecutar() {
     console.log(`Contraseña re-hasheada para id_empleado ${emp.id_empleado}`);
   }
 
+<<<<<<< HEAD
   console.log('\n=== Credenciales de prueba ===');
   console.log('admin    -> admin@elfogon.com    / Admin#2026');
   console.log('cocina   -> cocina@elfogon.com   / Cocina#2026');
@@ -59,6 +60,9 @@ async function ejecutar() {
   console.log('caja     -> caja@elfogon.com     / Caja#2026');
   console.log('cliente  -> paola.gutierrez@example.com / Cliente#2026');
   console.log('==============================\n');
+=======
+  console.log('Listo. Ver README.md para la tabla de credenciales.');
+>>>>>>> 61ecb865b1518d238471e723efa4831efb158b84
   process.exit(0);
 }
 
