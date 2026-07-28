@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { IconoAdvertencia, IconoCheck, IconoCirculo, IconoRefrescar } from '../components/Icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { IconoAdvertencia, IconoCheck, IconoCirculo } from '../components/Icons.jsx';
 import BotonGoogle from '../components/BotonGoogle.jsx';
 
 function evaluarFortalezaLocal(password) {
@@ -37,8 +37,6 @@ function validarCorreo(correo) {
 
 export default function Registro() {
   const [form, setForm] = useState({ nombre: '', apellidos: '', correo: '', telefono: '', password: '', confirmarPassword: '' });
-  const [captcha, setCaptcha] = useState(null);
-  const [captchaRespuesta, setCaptchaRespuesta] = useState('');
   const [tocado, setTocado] = useState({});
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
@@ -48,13 +46,6 @@ export default function Registro() {
 
   const fortaleza = evaluarFortalezaLocal(form.password);
   const contraseñasCoinciden = form.password && form.password === form.confirmarPassword;
-
-  async function cargarCaptcha() {
-    const res = await api.get('/auth/captcha');
-    setCaptcha(res.data);
-    setCaptchaRespuesta('');
-  }
-  useEffect(() => { cargarCaptcha(); }, []);
 
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -76,7 +67,7 @@ export default function Registro() {
   async function enviar(e) {
     e.preventDefault();
     setError(''); setExito('');
-    setTocado({ nombre: true, apellidos: true, correo: true, password: true, confirmarPassword: true, captcha: true });
+    setTocado({ nombre: true, apellidos: true, correo: true, password: true, confirmarPassword: true });
 
     if (form.nombre.trim().length < 2 || form.apellidos.trim().length < 2 || !validarCorreo(form.correo)) {
       setError('Revisa los campos marcados en rojo antes de continuar.');
@@ -90,24 +81,18 @@ export default function Registro() {
       setError('Las contraseñas no coinciden.');
       return;
     }
-    if (!captchaRespuesta) {
-      setError('Completa la verificación de seguridad.');
-      return;
-    }
 
     setEnviando(true);
     try {
-      await api.post('/auth/registro', {
+      const res = await api.post('/auth/registro', {
         nombre: form.nombre, apellidos: form.apellidos, correo: form.correo,
-        telefono: form.telefono, password: form.password,
-        captchaId: captcha.captchaId,
-        captchaRespuesta
+        telefono: form.telefono, password: form.password
       });
-      setExito('Cuenta creada correctamente. Te llevamos a la pantalla de inicio de sesión…');
-      setTimeout(() => navigate('/login'), 1400);
+      iniciarSesion(res.data);
+      setExito('Cuenta creada correctamente. Te llevamos a tu panel…');
+      setTimeout(() => navigate('/panel'), 1200);
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo completar el registro');
-      cargarCaptcha();
     } finally {
       setEnviando(false);
     }
@@ -212,32 +197,11 @@ export default function Registro() {
             )}
           </div>
 
-          <div className="campo">
-            <label>Verificación de seguridad</label>
-            {captcha && (
-              <div className="captcha-fila" style={{ background: 'var(--crema)', padding: 10, borderRadius: 8 }}>
-                <span dangerouslySetInnerHTML={{ __html: captcha.svg }} />
-                <button type="button" className="boton boton-outline" onClick={cargarCaptcha} title="Generar otro captcha" aria-label="Generar otro captcha">
-                  <IconoRefrescar />
-                </button>
-              </div>
-            )}
-            <input
-              style={{ marginTop: 8 }}
-              value={captchaRespuesta}
-              onChange={(e) => setCaptchaRespuesta(e.target.value)}
-              placeholder="Escribe el texto de la imagen"
-            />
-          </div>
-
           <button className="boton boton-primario boton-ancho" disabled={enviando}>
             {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
           </button>
 
-          <BotonGoogle
-            onExito={(datos) => { iniciarSesion(datos); navigate('/panel'); }}
-            onError={(msg) => setError(msg)}
-          />
+          <BotonGoogle onExito={(datos) => { iniciarSesion(datos); navigate('/panel'); }} onError={setError} />
 
           <p style={{ fontSize: '.9rem', textAlign: 'center' }}>
             ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>

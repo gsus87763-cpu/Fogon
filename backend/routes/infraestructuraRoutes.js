@@ -4,25 +4,25 @@ const pool = require('../config/db');
 const asyncHandler = require('../middlewares/asyncHandler');
 const { verificarToken, permitirRoles } = require('../middlewares/auth');
 
-// Público: ambientes activos
+// Público: ambientes (para la web y el formulario de reserva)
 router.get('/ambientes', asyncHandler(async (req, res) => {
-  const [filas] = await pool.query('SELECT * FROM AMBIENTE ORDER BY nombre');
+  const [filas] = await pool.query('SELECT * FROM ambiente ORDER BY nombre');
   res.json(filas);
 }));
 
-// Público: mesas disponibles (para elegir en el formulario de reserva)
+// Público: mesas (para elegir en el formulario de reserva)
 router.get('/mesas', asyncHandler(async (req, res) => {
   const [filas] = await pool.query(
-    `SELECT m.*, a.nombre AS ambiente FROM MESA m
-     JOIN AMBIENTE a ON a.id_ambiente = m.id_ambiente
-     WHERE m.activo = 1 ORDER BY a.nombre, m.numero`
+    `SELECT m.*, a.nombre AS ambiente FROM mesa m
+     JOIN ambiente a ON a.id_ambiente = m.id_ambiente
+     ORDER BY a.nombre, m.id_mesa`
   );
   res.json(filas);
 }));
 
 // Interno: empleados (RRHH / admin)
-router.get('/empleados', verificarToken, permitirRoles('admin', 'rrhh'), asyncHandler(async (req, res) => {
-  const [filas] = await pool.query('SELECT * FROM EMPLEADO WHERE activo = 1 ORDER BY apellidos');
+router.get('/empleados', verificarToken, permitirRoles('admin'), asyncHandler(async (req, res) => {
+  const [filas] = await pool.query("SELECT * FROM empleado WHERE estado <> 'Inactivo' OR estado IS NULL ORDER BY apellidos");
   res.json(filas);
 }));
 

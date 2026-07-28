@@ -65,7 +65,7 @@ async function actualizar(req, res) {
   }
 }
 
-// DELETE lógico: nunca borra la fila, solo marca activo = 0 (y su USUARIO, si tiene)
+// DELETE lógico: nunca borra la fila, solo marca activo = 0
 async function eliminar(req, res) {
   try {
     const existente = await clienteModel.obtenerPorId(req.params.id);

@@ -32,13 +32,37 @@ function tablasDisponibles(req, res) {
   res.json(resultado);
 }
 
+function columnasSelect(meta) {
+  const columnas = meta.pk ? [meta.pk, ...meta.columnas] : meta.columnas;
+  // dedupe por si el pk ya viniera repetido en columnas
+  return [...new Set(columnas)].map((c) => `\`${c}\``).join(', ');
+}
+
 async function listar(req, res) {
   const meta = verificarAcceso(req, res, 'leer');
   if (!meta) return;
   const { tabla } = req.params;
   try {
     const limite = Math.min(Number(req.query.limite) || 200, 1000);
-    const [filas] = await pool.query(`SELECT * FROM \`${tabla}\` LIMIT ?`, [limite]);
+
+    // Filtrado simple por columna: /api/admin-tablas/producto_emplatado?categoria=Postre
+    // Solo se aceptan columnas de la lista blanca de la tabla (evita SQL injection
+    // por nombre de columna) y el valor siempre va parametrizado.
+    const columnasFiltrables = meta.pk ? [meta.pk, ...meta.columnas] : meta.columnas;
+    const filtrosValidos = Object.entries(req.query).filter(
+      ([clave]) => columnasFiltrables.includes(clave)
+    );
+
+    let sql = `SELECT ${columnasSelect(meta)} FROM \`${tabla}\``;
+    const params = [];
+    if (filtrosValidos.length > 0) {
+      sql += ' WHERE ' + filtrosValidos.map(([clave]) => `\`${clave}\` = ?`).join(' AND ');
+      params.push(...filtrosValidos.map(([, valor]) => valor));
+    }
+    sql += ' LIMIT ?';
+    params.push(limite);
+
+    const [filas] = await pool.query(sql, params);
     res.json(filas);
   } catch (err) {
     console.error(err);
@@ -51,7 +75,7 @@ async function obtener(req, res) {
   if (!meta || !meta.pk) return res.status(400).json({ mensaje: 'Esta tabla no tiene una llave primaria simple para consultar por ID' });
   const { tabla, id } = req.params;
   try {
-    const [filas] = await pool.query(`SELECT * FROM \`${tabla}\` WHERE \`${meta.pk}\` = ?`, [id]);
+    const [filas] = await pool.query(`SELECT ${columnasSelect(meta)} FROM \`${tabla}\` WHERE \`${meta.pk}\` = ?`, [id]);
     if (filas.length === 0) return res.status(404).json({ mensaje: 'Registro no encontrado' });
     res.json(filas[0]);
   } catch (err) {
@@ -81,7 +105,7 @@ async function crear(req, res) {
       valores
     );
     if (meta.pk) {
-      const [[fila]] = await pool.query(`SELECT * FROM \`${tabla}\` WHERE \`${meta.pk}\` = ?`, [resultado.insertId]);
+      const [[fila]] = await pool.query(`SELECT ${columnasSelect(meta)} FROM \`${tabla}\` WHERE \`${meta.pk}\` = ?`, [resultado.insertId]);
       return res.status(201).json(fila);
     }
     res.status(201).json({ mensaje: 'Registro creado', filasAfectadas: resultado.affectedRows });
@@ -101,7 +125,7 @@ async function actualizar(req, res) {
   try {
     const asignaciones = campos.map((c) => `\`${c}\` = ?`).join(', ');
     await pool.query(`UPDATE \`${tabla}\` SET ${asignaciones} WHERE \`${meta.pk}\` = ?`, [...valores, id]);
-    const [[fila]] = await pool.query(`SELECT * FROM \`${tabla}\` WHERE \`${meta.pk}\` = ?`, [id]);
+    const [[fila]] = await pool.query(`SELECT ${columnasSelect(meta)} FROM \`${tabla}\` WHERE \`${meta.pk}\` = ?`, [id]);
     if (!fila) return res.status(404).json({ mensaje: 'Registro no encontrado' });
     res.json(fila);
   } catch (err) {

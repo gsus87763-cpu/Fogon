@@ -5,11 +5,12 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const adminTablasRoutes = require('./routes/adminTablasRoutes');
 const productoRoutes = require('./routes/productoRoutes');
-const reservaRoutes = require('./routes/reservaRoutes');
-const estadisticaRoutes = require('./routes/estadisticaRoutes');
 const infraestructuraRoutes = require('./routes/infraestructuraRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
-const financeRoutes = require('./routes/financeRoutes');
+// PENDIENTES DE PORTAR al nuevo esquema (reserva ya no tiene hora/motivo/activo;
+// estadisticas usaba RECURSO_MONETARIO que ya no existe):
+// const reservaRoutes = require('./routes/reservaRoutes');
+// const estadisticaRoutes = require('./routes/estadisticaRoutes');
 
 const app = express();
 
@@ -21,11 +22,8 @@ app.get('/api/health', (req, res) => res.json({ estado: 'ok', servicio: 'El FogÃ
 app.use('/api/auth', authRoutes);
 app.use('/api/admin-tablas', adminTablasRoutes);
 app.use('/api/productos', productoRoutes);
-app.use('/api/reservas', reservaRoutes);
-app.use('/api/estadisticas', estadisticaRoutes);
-app.use('/api', infraestructuraRoutes); // /api/ambientes, /api/mesas, /api/empleados
 app.use('/api/clientes', clienteRoutes);
-app.use('/api/finanzas', financeRoutes);
+app.use('/api', infraestructuraRoutes);
 
 // Manejador de errores genÃ©rico
 app.use((err, req, res, next) => {

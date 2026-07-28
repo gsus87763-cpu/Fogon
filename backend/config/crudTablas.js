@@ -9,8 +9,8 @@
  */
 
 const TABLAS = {
-  cliente: { pk: 'id_cliente', columnas: ['nombre', 'apellidos', 'ci', 'telefono', 'correo', 'fecha_nacimiento', 'activo'] },
-  empleado: { pk: 'id_empleado', columnas: ['nombre', 'apellidos', 'ci', 'sexo', 'fecha_nacimiento', 'estado_civil', 'telefono', 'estado', 'idioma', 'correo_electronico', 'numero_puerta', 'calle', 'ciudad', 'id_ambiente'] },
+  cliente: { pk: 'id_cliente', columnas: ['nombre', 'apellidos', 'ci', 'telefono', 'correo', 'fecha_nacimiento', 'activo'], sensibles: ['contrasenia'] },
+  empleado: { pk: 'id_empleado', columnas: ['nombre', 'apellidos', 'ci', 'sexo', 'fecha_nacimiento', 'estado_civil', 'telefono', 'estado', 'idioma', 'correo_electronico', 'numero_puerta', 'calle', 'ciudad', 'id_ambiente'], sensibles: ['contrasenia'] },
   administrador: { pk: 'id_administrador', columnas: ['id_empleado'] },
   cocinero: { pk: 'id_cocinero', columnas: ['id_empleado', 'especialidad'] },
   certificacion: { pk: 'id_certificacion', columnas: ['id_cocinero', 'nombre_certificacion', 'institucion_emisora', 'fecha_expiracion', 'fecha_emision', 'nivel', 'estado_vigencia'] },
@@ -30,7 +30,7 @@ const TABLAS = {
   almacen: { pk: 'id_almacen', columnas: ['nombre', 'id_responsable', 'tipo', 'descripción', 'estado', 'capacidad_maxima'] },
   producto: { pk: 'id_producto', columnas: ['nombre', 'categoria', 'unidad_de_medida', 'marca', 'stock', 'fecha_vencimiento', 'id_almacen'] },
   carta: { pk: 'id_carta', columnas: ['nombre', 'descripción', 'tipo'] },
-  producto_emplatado: { pk: 'id_producto_emplatado', columnas: ['nombre', 'descripcion', 'costo', 'id_carta'] },
+  producto_emplatado: { pk: 'id_producto_emplatado', columnas: ['nombre', 'descripcion', 'categoria', 'costo', 'imagen_url', 'estado', 'id_carta'] },
   detalle_compra: { pk: 'id_detalle', columnas: ['fecha_compra', 'costo_adquisicion', 'proveedor', 'numero_factura', 'fecha_vencimiento_garantia', 'garantia', 'id_equipamiento'] },
   detalle_compra_producto: { pk: 'id_detalle_p', columnas: ['cantidad', 'costo', 'proveedor', 'fecha_compra', 'id_producto'] },
   pago_empleado: { pk: 'id_pago', columnas: ['observaciones', 'monto', 'fecha_pago', 'id_empleado'] },

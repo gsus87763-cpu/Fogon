@@ -151,54 +151,13 @@ el-fogon/
 
 ## 8. Notas y alcance académico
 
-- El proyecto implementa **CRUD completo con eliminación lógica** en Productos (carta) y
-  Clientes. El resto de los módulos (empleados, mesas, etc.) tiene sus tablas, relaciones y
-  endpoints de lectura ya modelados en `schema.sql` y las rutas de infraestructura, además
-  del CRUD genérico de administración (`/api/admin-tablas/:tabla`) que cubre el resto de
-  entidades para el rol admin. Falta construir la pantalla de React que recorra ese CRUD
-  genérico de forma dinámica (hoy solo se consume puntualmente, p. ej. en Ambientes).
+- El proyecto implementa **un módulo CRUD completo con eliminación lógica** (Productos),
+  como exige la consigna. El resto de los módulos (empleados, ingredientes, mesas, etc.)
+  tiene sus tablas, relaciones y endpoints de lectura ya modelados en `schema.sql` y las
+  rutas de infraestructura, listos para ampliarse con el mismo patrón (modelo → validación
+  → controlador → rutas → página React) si se requiere CRUD completo en más módulos.
 - El CAPTCHA se genera en memoria en el backend (`utils/captcha.js`) con un TTL de 5 minutos
   y un solo uso por verificación; para un despliegue en producción real conviene moverlo a
   Redis o un servicio equivalente.
 - Los montos y precios están en bolivianos (Bs) como referencia; se puede ajustar el símbolo
   de moneda en el frontend según el mercado.
-
-## 9. Migración v2 (julio 2026)
-
-`schema.sql` se quedó desactualizado frente a lo que el backend ya esperaba (carrito de
-platos en la reserva, finanzas, login con Google, etc.), lo que producía errores 500 en
-`/productos`, `/ambientes` y el registro de cuentas. Esta ronda corrigió eso:
-
-- **Instalación nueva**: importa `backend/schema.sql` completo — ya incluye todo.
-- **Base de datos ya existente** (Railway, phpMyAdmin en producción, etc.): ejecuta
-  `backend/migracion_v2.sql` una sola vez sobre tu base actual. Es aditivo, no borra ni
-  renombra nada de lo que ya tenías.
-- Se agregaron/corrigieron: columnas de `empleado.activo`, `mesa.numero`/`activo`,
-  `reserva.hora`/`motivo`/`activo`/`fecha_expiracion`, `producto_emplatado` como el plato
-  real de carta (con `categoria`, `precio`, `imagen_url`, `cupo_diario`, `estado`), la tabla
-  `reserva_producto` (carrito), `ambiente.imagen_url`, columnas de `factura`/`pago_empleado`/
-  `detalle_compra` que usa el módulo de finanzas, la tabla `detalle_compra_item`, y las
-  funciones/procedimientos `fn_total_reserva`, `sp_generar_factura`,
-  `sp_registrar_pago_empleado`.
-- Se removió el endpoint `/api/ingredientes` (la entidad INGREDIENTE/COCINA_INGREDIENTE no
-  forma parte del proyecto).
-- Se conectó `GET /api/auth/captcha` (el frontend ya lo llamaba pero no existía la ruta) y
-  ahora `registro`/`login` validan el captcha de verdad.
-- Login con Google: ya estaba implementado en el backend (`/api/auth/google`); ahora el botón
-  "Continuar con Google" aparece en Login y Registro. Configura `GOOGLE_CLIENT_ID` (backend) y
-  `VITE_GOOGLE_CLIENT_ID` (frontend) con el mismo Client ID de Google Cloud Console — si se
-  deja vacío, el botón simplemente no se muestra.
-- Recuperar contraseña: nuevas páginas `/recuperar-password` y `/restablecer-password` conectadas
-  a los endpoints que ya existían en el backend (`/api/auth/recuperar` y `/api/auth/restablecer`).
-- Nuevo panel de administración de **Clientes** (`/panel/clientes`, solo admin): CRUD con baja
-  lógica + exportar a PDF/Excel.
-- Nuevo panel de **Finanzas** (`/panel/finanzas`): pestañas Pago Empleado / Facturas / Detalle
-  de Compra, con exportación a PDF/Excel restringida a admin.
-- Nuevo panel de **Ambientes** (`/panel/ambientes`, solo admin) para poner imagen y datos de
-  cada salón; los platos de la carta (`/panel/productos`) ya tenían campo de imagen, solo
-  faltaba la columna en la base de datos.
-- `routes/usuarioRoutes.js` y `models/usuarioModel.js` quedan **sin montar a propósito**: son
-  de un diseño anterior que asumía tablas `USUARIO`/`ROL` separadas, que este esquema no
-  tiene (el rol se resuelve directo contra `CLIENTE`/`EMPLEADO`/`ADMINISTRADOR`/`COCINERO` en
-  `authController.js`). Si se quiere una gestión de "usuarios y roles" genérica habría que
-  crear esas tablas primero; por ahora el control de clientes se cubre con `/panel/clientes`.
