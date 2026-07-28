@@ -9,7 +9,8 @@ const ACCESOS_POR_ROL = {
     { to: '/panel/estadisticas', titulo: 'Reportes y estadísticas', desc: 'Gráficos y reporte PDF' },
     { to: '/panel/clientes', titulo: 'Clientes', desc: 'Gestionar cuentas de clientes' },
     { to: '/panel/ambientes', titulo: 'Ambientes', desc: 'Gestionar salones y ambientes' },
-    { to: '/panel/finanzas', titulo: 'Finanzas', desc: 'Pagos, facturas y compras' }
+    { to: '/panel/finanzas', titulo: 'Finanzas', desc: 'Pagos, facturas y compras' },
+    { to: '/panel/consultas', titulo: 'Consultas SQL', desc: 'Ejecutar consultas directas sobre la BD de Railway' }
   ],
   salon: [
     { to: '/panel/reservas-salon', titulo: 'Reservas y mesas', desc: 'Confirmar reservas del día' }
