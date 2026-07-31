@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -14,9 +14,23 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [tocado, setTocado] = useState({});
   const [error, setError] = useState('');
+  const [captcha, setCaptcha] = useState(null);
+  const [captchaRespuesta, setCaptchaRespuesta] = useState('');
   const [enviando, setEnviando] = useState(false);
   const { iniciarSesion } = useAuth();
   const navigate = useNavigate();
+
+  async function cargarCaptcha() {
+    try {
+      const res = await api.get('/auth/captcha');
+      setCaptcha(res.data);
+      setCaptchaRespuesta('');
+    } catch {
+      setCaptcha(null);
+    }
+  }
+
+  useEffect(() => { cargarCaptcha(); }, []);
 
   function errorDe(campo) {
     if (!tocado[campo]) return null;
@@ -38,13 +52,20 @@ export default function Login() {
     setError('');
     setTocado({ correo: true, password: true });
     if (!validarCorreo(correo) || !password) return;
+    if (!captchaRespuesta.trim()) {
+      setError('Completa el captcha antes de continuar.');
+      return;
+    }
 
     setEnviando(true);
     try {
-      const res = await api.post('/auth/login', { correo, password });
+      const res = await api.post('/auth/login', {
+        correo, password, captchaId: captcha?.captchaId, captchaRespuesta
+      });
       entrarConSesion(res.data);
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.');
+      cargarCaptcha(); // el captcha es de un solo uso: pedimos uno nuevo tras un intento fallido
     } finally {
       setEnviando(false);
     }
@@ -84,6 +105,29 @@ export default function Login() {
             <p style={{ fontSize: '.85rem', textAlign: 'right', marginTop: 6 }}>
               <Link to="/recuperar-password">¿Olvidaste tu contraseña?</Link>
             </p>
+          </div>
+
+          <div className="campo">
+            <label>Verificación</label>
+            {captcha ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div
+                  style={{ border: '1px solid var(--borde, #ddd)', borderRadius: 8, overflow: 'hidden', lineHeight: 0 }}
+                  dangerouslySetInnerHTML={{ __html: captcha.svg }}
+                />
+                <button type="button" className="boton boton-secundario" onClick={cargarCaptcha}>
+                  Recargar
+                </button>
+              </div>
+            ) : (
+              <span style={{ fontSize: '.85rem', color: '#888' }}>Cargando verificación…</span>
+            )}
+            <input
+              style={{ marginTop: 8 }}
+              value={captchaRespuesta}
+              onChange={(e) => setCaptchaRespuesta(e.target.value)}
+              placeholder="Escribe el texto de la imagen"
+            />
           </div>
 
           <button className="boton boton-primario boton-ancho" disabled={enviando}>

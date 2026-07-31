@@ -15,6 +15,21 @@ const PASOS = [
 
 const VACIO = { id_mesa: '', fecha: '', hora: '', cantidad_personas: 2, motivo: '' };
 
+function descargar(blob, nombreArchivo) {
+  const url = window.URL.createObjectURL(blob);
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = nombreArchivo;
+  enlace.click();
+  window.URL.revokeObjectURL(url);
+}
+
+const ESTADO_PAGO_TEXTO = {
+  PENDIENTE: 'Pendiente de pago',
+  APROBADO: 'Pagado',
+  RECHAZADO: 'Pago rechazado'
+};
+
 export default function Reservas() {
   const { usuario } = useAuth();
   const { items, actualizarCantidad, quitar, vaciar, total } = useCarrito();
@@ -26,6 +41,7 @@ export default function Reservas() {
   const [mensaje, setMensaje] = useState(null);
   const [reservaConfirmada, setReservaConfirmada] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [descargandoPago, setDescargandoPago] = useState(null);
 
   useEffect(() => {
     api.get('/mesas').then((res) => setMesas(res.data));
@@ -93,6 +109,18 @@ export default function Reservas() {
     cargarMisReservas();
   }
 
+  async function descargarComprobante(id) {
+    setDescargandoPago(id);
+    try {
+      const res = await api.get(`/reservas/${id}/pago/comprobante`, { responseType: 'blob' });
+      descargar(res.data, `comprobante_reserva_${id}.pdf`);
+    } catch (err) {
+      setMensaje({ tipo: 'error', texto: 'No se pudo descargar el comprobante de pago' });
+    } finally {
+      setDescargandoPago(null);
+    }
+  }
+
   if (!usuario) {
     return (
       <div className="contenedor" style={{ paddingTop: 40, paddingBottom: 60 }}>
@@ -150,6 +178,23 @@ export default function Reservas() {
               <li><span>Platos anticipados</span><span>{reservaConfirmada.platos.length}</span></li>
             )}
           </ul>
+          {reservaConfirmada.pago && (
+            <div className="mensaje-alerta" style={{ marginTop: 14 }}>
+              <div>
+                Para dejar tu mesa activa, paga <strong>Bs {Number(reservaConfirmada.pago.monto).toFixed(2)}</strong> escaneando
+                el QR de tu comprobante (código <strong>{reservaConfirmada.pago.codigo}</strong>). En cuanto el pago
+                sea aprobado, tu reserva pasará automáticamente a <strong>CONFIRMADA</strong>.
+              </div>
+              <button
+                className="boton boton-primario"
+                style={{ marginTop: 10 }}
+                onClick={() => descargarComprobante(reservaConfirmada.id_reserva)}
+                disabled={descargandoPago === reservaConfirmada.id_reserva}
+              >
+                {descargandoPago === reservaConfirmada.id_reserva ? 'Generando…' : 'Descargar comprobante de pago (QR)'}
+              </button>
+            </div>
+          )}
           <button className="boton boton-outline" style={{ marginTop: 16 }} onClick={() => setReservaConfirmada(null)}>
             Hacer otra reserva
           </button>
@@ -282,7 +327,7 @@ export default function Reservas() {
         <div className="tabla-envoltorio">
           <table className="tabla">
             <thead>
-              <tr><th>Fecha</th><th>Hora</th><th>Mesa</th><th>Ambiente</th><th>Platos</th><th>Estado</th><th></th></tr>
+              <tr><th>Fecha</th><th>Hora</th><th>Mesa</th><th>Ambiente</th><th>Platos</th><th>Estado</th><th>Pago</th><th></th></tr>
             </thead>
             <tbody>
               {misReservas.map((r) => (
@@ -293,7 +338,17 @@ export default function Reservas() {
                   <td>{r.ambiente}</td>
                   <td>{r.platos?.length || 0}</td>
                   <td>{r.estado}</td>
-                  <td>
+                  <td>{r.estado === 'CANCELADA' ? '—' : (ESTADO_PAGO_TEXTO[r.estado_pago] || 'Pendiente de pago')}</td>
+                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {r.estado === 'PENDIENTE' && (
+                      <button
+                        className="boton boton-outline"
+                        onClick={() => descargarComprobante(r.id_reserva)}
+                        disabled={descargandoPago === r.id_reserva}
+                      >
+                        {descargandoPago === r.id_reserva ? 'Generando…' : 'Comprobante QR'}
+                      </button>
+                    )}
                     {['PENDIENTE', 'CONFIRMADA'].includes(r.estado) && (
                       <button className="boton boton-outline" onClick={() => cancelar(r.id_reserva)}>Cancelar</button>
                     )}

@@ -93,8 +93,14 @@ async function registro(req, res) {
 // POST /api/auth/login  { correo, password }
 // Busca primero en empleado (personal interno) y luego en cliente.
 async function login(req, res) {
-  const { correo, password } = req.body;
+  const { correo, password, captchaId, captchaRespuesta } = req.body;
   if (!correo || !password) return res.status(400).json({ mensaje: 'correo y password son obligatorios' });
+  if (!captchaId || !captchaRespuesta) {
+    return res.status(400).json({ mensaje: 'Completa el captcha' });
+  }
+  if (!verificarCaptcha(captchaId, captchaRespuesta)) {
+    return res.status(400).json({ mensaje: 'El captcha es incorrecto o expiró, intenta de nuevo' });
+  }
 
   try {
     const [empleados] = await pool.query(

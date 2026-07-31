@@ -98,6 +98,25 @@ También puedes registrar un cliente nuevo desde `/registro` en el sitio públic
 
 ## 6bis. Funcionalidades agregadas en esta iteración
 
+- **CAPTCHA también en el login** (antes solo estaba en el registro): `backend/controllers/authController.js`
+  (`login`) exige `captchaId` + `captchaRespuesta`, igual que el registro; UI en `frontend/src/pages/Login.jsx`.
+- **Reserva con QR de pago**: al crear una reserva (`POST /api/reservas`, solo clientes), el backend
+  calcula un monto a cobrar (el total del carrito de platos anticipados, o una seña mínima por
+  persona — `RESERVA_SENA_POR_PERSONA` en `.env` — si no alcanza) y genera automáticamente una
+  solicitud de cobro con un código único (`backend/models/reservaModel.js`, tabla `pago_reserva` de
+  `backend/migracion_v3.sql`).
+- **Comprobante en PDF con QR**: `GET /api/reservas/:id/pago/comprobante` genera un PDF (pdfkit) con
+  fecha, hora, mesa, ambiente, personas, monto y un código QR (`backend/utils/qrPago.js`, librería
+  `qrcode`) con todos esos datos firmados. El cliente lo descarga desde "Mis reservas"
+  (`frontend/src/pages/Reservas.jsx`).
+- **Aprobación/rechazo del pago**: el personal de caja/salón/admin verifica el código del QR desde
+  `PanelReservasSalon.jsx` y llama a `POST /api/reservas/:id/pago/resolver { codigo, aprobar }`.
+  Si se aprueba, la reserva pasa automáticamente a `CONFIRMADA` (queda activa) y se genera su
+  factura reutilizando `sp_generar_factura`; si se rechaza, el cliente puede regenerar un QR nuevo
+  (`POST /api/reservas/:id/pago/regenerar`).
+- Requiere ejecutar `backend/migracion_v3.sql` sobre la base de datos (después de
+  `migracion_v2.sql`, del cual depende).
+
 - **Modo claro/oscuro**: botón en la navbar, persistido en `localStorage`, respeta la preferencia
   del sistema operativo la primera vez (`frontend/src/context/ThemeContext.jsx`).
 - **Carrito de platos para la reserva** (no es un carrito de compra/pago): el cliente arma su

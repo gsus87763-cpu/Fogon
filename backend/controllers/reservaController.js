@@ -1,4 +1,7 @@
+const PDFDocument = require('pdfkit');
 const reservaModel = require('../models/reservaModel');
+const financeModel = require('../models/financeModel');
+const { construirPayloadQR, verificarFirmaPayload, generarImagenQR } = require('../utils/qrPago');
 
 function validarDatosReserva({ id_mesa, fecha, hora, cantidad_personas }) {
   const errores = [];
@@ -103,4 +106,157 @@ async function cancelar(req, res) {
   }
 }
 
-module.exports = { misReservas, listarTodas, crear, confirmar, cancelar };
+const ROLES_CAJA = ['admin', 'salon', 'caja'];
+
+function puedeVerReserva(req, reserva) {
+  const idCliente = idClienteDelToken(req.user);
+  if (idCliente && reserva.id_cliente === idCliente) return true;
+  return ROLES_CAJA.includes(req.user.rol);
+}
+
+// GET /api/reservas/:id/pago -> estado actual del cobro (para refrescar
+// el panel del cliente o del cajero sin tener que descargar el PDF).
+async function obtenerPago(req, res) {
+  try {
+    const reserva = await reservaModel.obtenerPorId(req.params.id);
+    if (!reserva) return res.status(404).json({ mensaje: 'Reserva no encontrada' });
+    if (!puedeVerReserva(req, reserva)) return res.status(403).json({ mensaje: 'No tienes acceso a esta reserva' });
+
+    const pago = await reservaModel.obtenerPagoVigente(req.params.id);
+    res.json(pago);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ mensaje: 'Error al consultar el pago' });
+  }
+}
+
+// POST /api/reservas/:id/pago/regenerar -> genera un QR nuevo (por
+// ejemplo si el anterior expiró o fue rechazado). Solo el dueño de la
+// reserva o el personal de caja/salón/admin puede pedirlo.
+async function regenerarPago(req, res) {
+  try {
+    const reserva = await reservaModel.obtenerPorId(req.params.id);
+    if (!reserva) return res.status(404).json({ mensaje: 'Reserva no encontrada' });
+    if (!puedeVerReserva(req, reserva)) return res.status(403).json({ mensaje: 'No tienes acceso a esta reserva' });
+    if (reserva.estado !== 'PENDIENTE') {
+      return res.status(409).json({ mensaje: 'Esta reserva ya no está pendiente de pago' });
+    }
+
+    const platos = await reservaModel.obtenerPlatosDeReserva(req.params.id);
+    const monto = reservaModel.calcularMontoReserva(platos, reserva.cantidad_personas);
+    const pago = await reservaModel.crearPagoQR(req.params.id, monto);
+    res.status(201).json(pago);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ mensaje: 'Error al generar el nuevo QR de pago' });
+  }
+}
+
+// GET /api/reservas/:id/pago/comprobante -> PDF con el detalle de la
+// reserva y el QR de pago, para que el cliente lo muestre o lo enseñe
+// al momento de pagar (día, hora, mesa, monto, código).
+async function comprobantePago(req, res) {
+  try {
+    const reserva = await reservaModel.obtenerDetallado(req.params.id);
+    if (!reserva) return res.status(404).json({ mensaje: 'Reserva no encontrada' });
+    if (!puedeVerReserva(req, reserva)) return res.status(403).json({ mensaje: 'No tienes acceso a esta reserva' });
+
+    const pago = await reservaModel.obtenerPagoVigente(req.params.id);
+    if (!pago) return res.status(404).json({ mensaje: 'Esta reserva todavía no tiene un cobro generado' });
+
+    const contenidoQR = construirPayloadQR({ codigo: pago.codigo, monto: pago.monto, reserva });
+    const imagenQR = await generarImagenQR(contenidoQR);
+
+    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="comprobante_reserva_${reserva.id_reserva}.pdf"`);
+    doc.pipe(res);
+
+    doc.fontSize(22).fillColor('#5c1a1a').text('EL FOGÓN', { align: 'center' });
+    doc.fontSize(13).fillColor('#333').text('Comprobante de pago de reserva', { align: 'center' });
+    doc.moveDown(1);
+
+    const filaEstado = pago.estado === 'APROBADO' ? 'PAGADO'
+      : pago.estado === 'RECHAZADO' ? 'RECHAZADO' : 'PENDIENTE DE PAGO';
+    doc.fontSize(11).fillColor('#000');
+    const detalles = [
+      ['Cliente', reserva.cliente],
+      ['Fecha de la reserva', reserva.fecha],
+      ['Hora', reserva.hora],
+      ['Ambiente', reserva.ambiente],
+      ['Mesa', `N.º ${reserva.numero_mesa}`],
+      ['Cantidad de personas', String(reserva.cantidad_personas)],
+      ['Código de pago', pago.codigo],
+      ['Monto a pagar', `Bs ${Number(pago.monto).toFixed(2)}`],
+      ['Estado del pago', filaEstado],
+      ['Válido hasta', new Date(pago.fecha_expiracion).toLocaleString('es-BO')]
+    ];
+    detalles.forEach(([etiqueta, valor]) => {
+      doc.font('Helvetica-Bold').text(`${etiqueta}: `, { continued: true }).font('Helvetica').text(String(valor ?? '-'));
+    });
+
+    doc.moveDown(1);
+    doc.fontSize(10).fillColor('#666').text(
+      'Escanea este código QR con tu app bancaria o muéstralo en caja para completar el pago. ' +
+      'Tu reserva quedará activa apenas el pago sea aprobado.',
+      { width: 470 }
+    );
+    doc.moveDown(0.5);
+    const xQR = (doc.page.width - 200) / 2;
+    doc.image(imagenQR, xQR, doc.y, { width: 200, height: 200 });
+    doc.moveDown(15);
+    doc.fontSize(9).fillColor('#999').text('Este comprobante es de uso académico y no reemplaza un comprobante bancario oficial.', { align: 'center' });
+
+    doc.end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ mensaje: 'Error al generar el comprobante de pago' });
+  }
+}
+
+// POST /api/reservas/:id/pago/resolver { codigo, aprobar, observacion }
+// Lo usa el personal de caja/salón/admin al verificar el QR (leyéndolo o
+// tecleando el código). Aprobar deja la reserva CONFIRMADA (activa) y
+// genera su factura; rechazar la deja pendiente para que el cliente
+// pueda reintentar el pago.
+async function resolverPago(req, res) {
+  try {
+    const { codigo, aprobar, observacion } = req.body;
+    if (typeof aprobar !== 'boolean') {
+      return res.status(400).json({ mensaje: 'Indica si el pago se aprueba o se rechaza' });
+    }
+
+    const pago = await reservaModel.obtenerPagoVigente(req.params.id);
+    if (!pago) return res.status(404).json({ mensaje: 'Esta reserva no tiene un cobro pendiente' });
+    if (!codigo || codigo.trim().toUpperCase() !== pago.codigo) {
+      return res.status(400).json({ mensaje: 'El código no coincide con el QR de esta reserva' });
+    }
+
+    const idEmpleado = req.user.tipo_cuenta === 'EMPLEADO' ? req.user.id_cuenta : null;
+    const resultado = await reservaModel.resolverPago(pago.id_pago, { aprobar, id_empleado: idEmpleado, observacion });
+
+    if (aprobar) {
+      try {
+        await financeModel.generarFactura({ id_reserva: req.params.id, metodo_pago: 'QR' });
+      } catch (errFactura) {
+        // No revertimos la aprobación del pago por esto: la reserva ya
+        // quedó activa, que es lo importante para el cliente. Solo se
+        // registra para que el admin revise la facturación manualmente.
+        console.error('El pago se aprobó pero no se pudo generar la factura automáticamente:', errFactura.message);
+      }
+    }
+
+    res.json(resultado);
+  } catch (err) {
+    if (err.message && (err.message.includes('ya fue procesado') || err.message.includes('expiró'))) {
+      return res.status(409).json({ mensaje: err.message });
+    }
+    console.error(err);
+    res.status(500).json({ mensaje: 'Error al procesar el pago' });
+  }
+}
+
+module.exports = {
+  misReservas, listarTodas, crear, confirmar, cancelar,
+  obtenerPago, regenerarPago, comprobantePago, resolverPago
+};

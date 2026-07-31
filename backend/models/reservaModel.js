@@ -1,4 +1,11 @@
 const pool = require('../config/db');
+const { generarCodigoPago } = require('../utils/qrPago');
+
+// Seña mínima por persona cuando la reserva no trae platos anticipados
+// (o el carrito no alcanza esa mínima). Cubre la mesa aunque el cliente
+// decida pedir todo en el momento. Configurable por variable de entorno.
+const SENA_POR_PERSONA = Number(process.env.RESERVA_SENA_POR_PERSONA || 15);
+const VIGENCIA_PAGO_MINUTOS = 30;
 
 async function listarPorCliente(id_cliente) {
   const [filas] = await pool.query(
@@ -10,9 +17,11 @@ async function listarPorCliente(id_cliente) {
      ORDER BY r.fecha DESC, r.hora DESC`,
     [id_cliente]
   );
-  // Adjunta el carrito de platos de cada reserva
+  // Adjunta el carrito de platos y el estado de pago vigente de cada reserva
   for (const reserva of filas) {
     reserva.platos = await obtenerPlatosDeReserva(reserva.id_reserva);
+    const pago = await obtenerPagoVigente(reserva.id_reserva);
+    reserva.estado_pago = pago ? pago.estado : null;
   }
   return filas;
 }
@@ -30,7 +39,27 @@ async function listarTodas({ fecha = null, estado = null } = {}) {
   if (estado) { sql += ' AND r.estado = ?'; params.push(estado); }
   sql += ' ORDER BY r.fecha DESC, r.hora DESC';
   const [filas] = await pool.query(sql, params);
+  for (const reserva of filas) {
+    const pago = await obtenerPagoVigente(reserva.id_reserva);
+    reserva.pago = pago ? { codigo: pago.codigo, monto: pago.monto, estado: pago.estado } : null;
+  }
   return filas;
+}
+
+// Igual que obtenerPorId, pero con los datos legibles (mesa, ambiente,
+// cliente) que necesita el comprobante de pago en PDF.
+async function obtenerDetallado(id) {
+  const [filas] = await pool.query(
+    `SELECT r.*, m.numero AS numero_mesa, a.nombre AS ambiente,
+            CONCAT(c.nombre, ' ', c.apellidos) AS cliente, c.correo
+     FROM reserva r
+     JOIN mesa m ON m.id_mesa = r.id_mesa
+     JOIN ambiente a ON a.id_ambiente = m.id_ambiente
+     JOIN cliente c ON c.id_cliente = r.id_cliente
+     WHERE r.id_reserva = ?`,
+    [id]
+  );
+  return filas[0] || null;
 }
 
 async function obtenerPorId(id) {
@@ -40,15 +69,9 @@ async function obtenerPorId(id) {
 
 async function obtenerPlatosDeReserva(id_reserva) {
   const [filas] = await pool.query(
-<<<<<<< HEAD
     `SELECT rp.id_producto, rp.cantidad, p.nombre, p.costo AS precio, p.imagen_url
      FROM reserva_producto rp
      JOIN producto_emplatado p ON p.id_producto_emplatado = rp.id_producto
-=======
-    `SELECT rp.id_producto, rp.cantidad, p.nombre, p.precio, p.imagen_url
-     FROM RESERVA_PRODUCTO rp
-     JOIN PRODUCTO_EMPLATADO p ON p.id_producto_emplatado = rp.id_producto
->>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
      WHERE rp.id_reserva = ?`,
     [id_reserva]
   );
@@ -93,11 +116,7 @@ async function crear({ id_cliente, id_mesa, fecha, hora, cantidad_personas, moti
 
     for (const item of platos) {
       const [[producto]] = await conexion.query(
-<<<<<<< HEAD
         'SELECT id_producto_emplatado AS id_producto, cupo_diario, estado FROM producto_emplatado WHERE id_producto_emplatado = ? FOR UPDATE',
-=======
-        'SELECT id_producto_emplatado AS id_producto, cupo_diario, estado FROM PRODUCTO_EMPLATADO WHERE id_producto_emplatado = ? FOR UPDATE',
->>>>>>> a8ece06d7bda7dd5174b157bf6a288520c5275dd
         [item.id_producto]
       );
       if (!producto || !producto.estado) {
@@ -125,7 +144,81 @@ async function crear({ id_cliente, id_mesa, fecha, hora, cantidad_personas, moti
     await conexion.commit();
     const reserva = await obtenerPorId(id_reserva);
     reserva.platos = await obtenerPlatosDeReserva(id_reserva);
+
+    const monto = calcularMontoReserva(reserva.platos, cantidad_personas);
+    reserva.pago = await crearPagoQR(id_reserva, monto);
     return reserva;
+  } catch (err) {
+    await conexion.rollback();
+    throw err;
+  } finally {
+    conexion.release();
+  }
+}
+
+// Calcula el monto a cobrar por una reserva: el total del carrito de
+// platos (si trae), o la seña mínima por persona si el carrito no
+// alcanza ese mínimo (o la reserva no trae platos).
+function calcularMontoReserva(platos, cantidad_personas) {
+  const totalPlatos = (platos || []).reduce(
+    (acc, p) => acc + Number(p.precio) * Number(p.cantidad), 0
+  );
+  const senaMinima = SENA_POR_PERSONA * Number(cantidad_personas || 1);
+  return Math.max(totalPlatos, senaMinima);
+}
+
+// Crea una nueva solicitud de cobro (QR) para una reserva. Cualquier
+// solicitud PENDIENTE anterior de esa reserva queda invalidada, para que
+// nunca haya dos códigos "vivos" al mismo tiempo.
+async function crearPagoQR(id_reserva, monto) {
+  await pool.query(
+    "UPDATE pago_reserva SET estado = 'RECHAZADO', observacion = 'Reemplazado por un nuevo QR' WHERE id_reserva = ? AND estado = 'PENDIENTE'",
+    [id_reserva]
+  );
+  const codigo = generarCodigoPago();
+  await pool.query(
+    `INSERT INTO pago_reserva (id_reserva, codigo, monto, estado, fecha_expiracion)
+     VALUES (?, ?, ?, 'PENDIENTE', DATE_ADD(NOW(), INTERVAL ? MINUTE))`,
+    [id_reserva, codigo, monto, VIGENCIA_PAGO_MINUTOS]
+  );
+  return obtenerPagoVigente(id_reserva);
+}
+
+// Trae el pago más reciente de una reserva (vigente o resuelto).
+async function obtenerPagoVigente(id_reserva) {
+  const [filas] = await pool.query(
+    'SELECT * FROM pago_reserva WHERE id_reserva = ? ORDER BY id_pago DESC LIMIT 1',
+    [id_reserva]
+  );
+  return filas[0] || null;
+}
+
+async function obtenerPagoPorId(id_pago) {
+  const [filas] = await pool.query('SELECT * FROM pago_reserva WHERE id_pago = ?', [id_pago]);
+  return filas[0] || null;
+}
+
+// Aprueba o rechaza un pago (lo hace el personal de caja/salón/admin al
+// verificar el QR). Si se aprueba, la reserva pasa a CONFIRMADA (activa).
+async function resolverPago(id_pago, { aprobar, id_empleado, observacion }) {
+  const conexion = await pool.getConnection();
+  try {
+    await conexion.beginTransaction();
+    const [[pago]] = await conexion.query('SELECT * FROM pago_reserva WHERE id_pago = ? FOR UPDATE', [id_pago]);
+    if (!pago) throw new Error('El pago indicado no existe');
+    if (pago.estado !== 'PENDIENTE') throw new Error('Este pago ya fue procesado anteriormente');
+    if (new Date(pago.fecha_expiracion) < new Date()) throw new Error('El QR de pago expiró, genera uno nuevo');
+
+    const nuevoEstado = aprobar ? 'APROBADO' : 'RECHAZADO';
+    await conexion.query(
+      'UPDATE pago_reserva SET estado = ?, fecha_resolucion = NOW(), id_procesado_por = ?, observacion = ? WHERE id_pago = ?',
+      [nuevoEstado, id_empleado || null, observacion || null, id_pago]
+    );
+    if (aprobar) {
+      await conexion.query("UPDATE reserva SET estado = 'CONFIRMADA' WHERE id_reserva = ?", [pago.id_reserva]);
+    }
+    await conexion.commit();
+    return { pago: await obtenerPagoPorId(id_pago), reserva: await obtenerPorId(pago.id_reserva) };
   } catch (err) {
     await conexion.rollback();
     throw err;
@@ -150,6 +243,7 @@ async function cancelar(id) {
 }
 
 module.exports = {
-  listarPorCliente, listarTodas, obtenerPorId, obtenerPlatosDeReserva,
-  existeChoque, reservadoEnFecha, crear, cambiarEstado, cancelar
+  listarPorCliente, listarTodas, obtenerPorId, obtenerDetallado, obtenerPlatosDeReserva,
+  existeChoque, reservadoEnFecha, crear, cambiarEstado, cancelar,
+  calcularMontoReserva, crearPagoQR, obtenerPagoVigente, obtenerPagoPorId, resolverPago
 };
