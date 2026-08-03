@@ -59,7 +59,7 @@ export default function Home() {
 
           <div className="hero__stats">
             <div><strong>18+</strong><span>platos en carta</span></div>
-            <div><strong>3</strong><span>ambientes distintos</span></div>
+            <div><strong>3+</strong><span>ambientes distintos</span></div>
             <div><strong>100%</strong><span>reserva en línea</span></div>
           </div>
         </div>
