@@ -2,6 +2,7 @@ const PDFDocument = require('pdfkit');
 const reservaModel = require('../models/reservaModel');
 const financeModel = require('../models/financeModel');
 const { construirPayloadQR, verificarFirmaPayload, generarImagenQR } = require('../utils/qrPago');
+const { enviarCorreoPagoAprobado, enviarCorreoPagoRechazado } = require('../utils/mailer');
 
 function validarDatosReserva({ id_mesa, fecha, hora, cantidad_personas }) {
   const errores = [];
@@ -234,6 +235,15 @@ async function resolverPago(req, res) {
 
     const idEmpleado = req.user.tipo_cuenta === 'EMPLEADO' ? req.user.id_cuenta : null;
     const resultado = await reservaModel.resolverPago(pago.id_pago, { aprobar, id_empleado: idEmpleado, observacion });
+
+    const reservaDetallada = await reservaModel.obtenerDetallado(req.params.id);
+    if (aprobar) {
+      enviarCorreoPagoAprobado({ correo: reservaDetallada?.correo, nombre: reservaDetallada?.cliente, reserva: reservaDetallada })
+        .catch((err) => console.error('No se pudo enviar el correo de pago aprobado:', err.message));
+    } else {
+      enviarCorreoPagoRechazado({ correo: reservaDetallada?.correo, nombre: reservaDetallada?.cliente, reserva: reservaDetallada, motivo: observacion })
+        .catch((err) => console.error('No se pudo enviar el correo de pago rechazado:', err.message));
+    }
 
     if (aprobar) {
       try {

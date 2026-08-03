@@ -3,8 +3,11 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const pool = require('../config/db');
 const { verificarIdTokenGoogle } = require('../utils/googleAuth');
-const { enviarCorreoRecuperacion } = require('../utils/mailer');
+const {
+  enviarCorreoRecuperacion, enviarCorreoNuevaSolicitudEmpleado
+} = require('../utils/mailer');
 const { generarCaptcha, verificarCaptcha } = require('../utils/captcha');
+const empleadoModel = require('../models/empleadoModel');
 
 const SALT_ROUNDS = 12;
 const RECUPERACION_TTL_MS = 60 * 60 * 1000; // 1 hora
@@ -26,6 +29,12 @@ async function obtenerRolEmpleado(conexion, idEmpleado) {
   if (admin.length > 0) return 'admin';
   const [cocinero] = await conexion.query('SELECT 1 FROM cocinero WHERE id_empleado = ?', [idEmpleado]);
   if (cocinero.length > 0) return 'cocina';
+
+  // Rol asignado directamente al aprobar la solicitud (ver empleadoModel.aprobar).
+  // Se revisa antes que el área, porque el modelo de "responsable de área" solo
+  // admite una persona por área y no alcanza para varios agentes/cajeros.
+  const [[fila]] = await conexion.query('SELECT rol_manual FROM empleado WHERE id_empleado = ?', [idEmpleado]);
+  if (fila?.rol_manual) return fila.rol_manual;
 
   const [areas] = await conexion.query('SELECT nombre FROM area WHERE id_responsable = ?', [idEmpleado]);
   for (const { nombre } of areas) {
@@ -90,6 +99,52 @@ async function registro(req, res) {
   }
 }
 
+// POST /api/auth/registro-empleado
+// Cualquiera puede postular a trabajar en El Fogón, pero la cuenta queda
+// "Pendiente" y no puede iniciar sesión hasta que un administrador la
+// apruebe (ver empleadoController.aprobar).
+async function registroEmpleado(req, res) {
+  const { nombre, apellidos, ci, telefono, correo, password, captchaId, captchaRespuesta } = req.body;
+  if (!nombre || !apellidos || !correo || !password) {
+    return res.status(400).json({ mensaje: 'nombre, apellidos, correo y password son obligatorios' });
+  }
+  if (!captchaId || !captchaRespuesta) {
+    return res.status(400).json({ mensaje: 'Completa el captcha' });
+  }
+  if (!verificarCaptcha(captchaId, captchaRespuesta)) {
+    return res.status(400).json({ mensaje: 'El captcha es incorrecto o expiró, intenta de nuevo' });
+  }
+  try {
+    const yaExiste = await empleadoModel.existePorCorreoOCi(correo, ci);
+    if (yaExiste) {
+      return res.status(409).json({ mensaje: 'Ya existe una cuenta de personal con ese correo o CI' });
+    }
+    const [clienteExistente] = await pool.query('SELECT id_cliente FROM cliente WHERE correo = ?', [correo]);
+    if (clienteExistente.length > 0) {
+      return res.status(409).json({ mensaje: 'Ese correo ya está registrado como cliente' });
+    }
+
+    const hash = await bcrypt.hash(password, SALT_ROUNDS);
+    const empleado = await empleadoModel.crearSolicitud({ nombre, apellidos, ci, telefono, correo, hash });
+
+    if (process.env.ADMIN_NOTIFICACION_CORREO) {
+      enviarCorreoNuevaSolicitudEmpleado({
+        correoAdmin: process.env.ADMIN_NOTIFICACION_CORREO,
+        nombreSolicitante: `${nombre} ${apellidos}`
+      }).catch((err) => console.error('No se pudo notificar la nueva solicitud de personal:', err.message));
+    }
+
+    res.status(201).json({
+      mensaje: 'Registro enviado. Un administrador revisará tu solicitud antes de que puedas ingresar.',
+      id_empleado: empleado.id_empleado,
+      estado: empleado.estado
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ mensaje: 'Error al registrar la solicitud de personal' });
+  }
+}
+
 // POST /api/auth/login  { correo, password }
 // Busca primero en empleado (personal interno) y luego en cliente.
 async function login(req, res) {
@@ -104,19 +159,25 @@ async function login(req, res) {
 
   try {
     const [empleados] = await pool.query(
-      'SELECT id_empleado, nombre, apellidos, contrasenia, estado FROM empleado WHERE correo_electronico = ?',
+      'SELECT id_empleado, nombre, apellidos, contrasenia, estado, motivo_rechazo FROM empleado WHERE correo_electronico = ?',
       [correo]
     );
 
     if (empleados.length > 0) {
       const empleado = empleados[0];
-      if (empleado.estado === 'Inactivo') {
-        return res.status(403).json({ mensaje: 'Cuenta inactiva, contacte al administrador' });
-      }
       const ok = empleado.contrasenia && await bcrypt.compare(password, empleado.contrasenia);
       if (!ok) {
         await registrarLogAcceso({ idEmpleado: empleado.id_empleado, estado: 'FALLIDO', req });
         return res.status(401).json({ mensaje: 'Credenciales incorrectas' });
+      }
+      if (empleado.estado === 'Pendiente') {
+        return res.json({ estadoSolicitud: 'PENDIENTE' });
+      }
+      if (empleado.estado === 'Rechazado') {
+        return res.json({ estadoSolicitud: 'RECHAZADO', motivo: empleado.motivo_rechazo || null });
+      }
+      if (empleado.estado === 'Inactivo') {
+        return res.status(403).json({ mensaje: 'Cuenta inactiva, contacte al administrador' });
       }
       const rol = await obtenerRolEmpleado(pool, empleado.id_empleado);
       const { token, payload } = firmarToken({
@@ -276,5 +337,6 @@ async function restablecerPassword(req, res) {
 }
 
 module.exports = {
-  obtenerCaptcha, registro, login, logout, loginGoogle, solicitarRecuperacion, restablecerPassword
+  obtenerCaptcha, registro, registroEmpleado, login, logout, loginGoogle,
+  solicitarRecuperacion, restablecerPassword
 };

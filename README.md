@@ -23,11 +23,19 @@ sobre una base de datos relacional en MySQL.
 
 ```bash
 mysql -u root -p < backend/schema.sql
+mysql -u root -p < backend/migracion_v2.sql
+mysql -u root -p < backend/migracion_v3.sql
+mysql -u root -p < backend/migracion_v4.sql
+mysql -u root -p < backend/migracion_v5.sql
 ```
 
 Esto crea la base `el_fogon`, todas las tablas, índices y datos de ejemplo (empleados,
-mesas, carta, ingredientes, etc.). **No crea usuarios de login todavía** — eso se hace en el
-paso 4 con `npm run seed`, porque las contraseñas deben quedar hasheadas con bcrypt.
+mesas, carta, ingredientes, etc.), y luego aplica las migraciones que agregan reservas con
+carrito de platos y cupo diario (`migracion_v2.sql`), el QR de pago de reservas
+(`migracion_v3.sql`) y el registro de personal con aprobación (`migracion_v4.sql` y
+`migracion_v5.sql`) — en ese orden, porque cada una depende de la anterior. **No crea usuarios
+de login todavía** — eso se hace en el paso 4 con `npm run seed`, porque las contraseñas deben
+quedar hasheadas con bcrypt.
 
 ---
 
@@ -116,6 +124,28 @@ También puedes registrar un cliente nuevo desde `/registro` en el sitio públic
   (`POST /api/reservas/:id/pago/regenerar`).
 - Requiere ejecutar `backend/migracion_v3.sql` sobre la base de datos (después de
   `migracion_v2.sql`, del cual depende).
+- **Notificaciones por correo**: al aprobar/rechazar el pago de una reserva, el cliente recibe un
+  correo automático (`backend/utils/mailer.js`); si no hay SMTP configurado en `.env`, el correo
+  se imprime en la consola del backend (modo desarrollo).
+- **Registro de personal con aprobación**: `POST /api/auth/registro-empleado` (con CAPTCHA) crea un
+  empleado en estado `Pendiente`. Al postular, o al intentar iniciar sesión mientras está pendiente
+  o fue rechazado, el frontend muestra una página dedicada (`SolicitudEstado.jsx`, ruta
+  `/solicitud-personal`) — no un simple mensaje de error — con "tu solicitud está en revisión" o el
+  motivo del rechazo. El login primero valida la contraseña y recién después revela el estado, para
+  no filtrar si un correo existe.
+  Un administrador aprueba o rechaza desde `PanelSolicitudesEmpleados.jsx`
+  (`GET/PATCH /api/empleados`, `backend/controllers/empleadoController.js`). Al aprobar se elige el
+  rol de trabajo — `staff`, `admin`, `cocina`, `salon` (agente que atiende mesas/reservas), `caja`,
+  `almacen` o `rrhh` — que se guarda en `empleado.rol_manual` (migración `migracion_v5.sql`) y decide
+  a qué panel entra (p. ej. un agente de salón va directo a "Reservas y mesas", un cocinero a
+  "Productos"). Al aprobar/rechazar se le notifica por correo.
+  Requiere `backend/migracion_v4.sql` (agrega `empleado.motivo_rechazo`) y `migracion_v5.sql`
+  (agrega `empleado.rol_manual`), después de `migracion_v2.sql` y `migracion_v3.sql`.
+- **Importante — rutas que estaban desconectadas**: `reservaRoutes`, `financeRoutes` y
+  `estadisticaRoutes` existían en el código pero no estaban montadas en `server.js` (quedaron
+  comentadas de una migración de esquema anterior). Ya están montadas (`/api/reservas`,
+  `/api/finanzas`, `/api/estadisticas`) — sin esto, reservas, pagos, facturas, compras y reportes
+  no eran alcanzables por la API aunque el código existiera.
 
 - **Modo claro/oscuro**: botón en la navbar, persistido en `localStorage`, respeta la preferencia
   del sistema operativo la primera vez (`frontend/src/context/ThemeContext.jsx`).

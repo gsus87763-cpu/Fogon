@@ -8,10 +8,13 @@ const productoRoutes = require('./routes/productoRoutes');
 const infraestructuraRoutes = require('./routes/infraestructuraRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
 const consultaRoutes = require('./routes/consultaRoutes');
-// PENDIENTES DE PORTAR al nuevo esquema (reserva ya no tiene hora/motivo/activo;
-// estadisticas usaba RECURSO_MONETARIO que ya no existe):
-// const reservaRoutes = require('./routes/reservaRoutes');
-// const estadisticaRoutes = require('./routes/estadisticaRoutes');
+const reservaRoutes = require('./routes/reservaRoutes');
+const financeRoutes = require('./routes/financeRoutes');
+const estadisticaRoutes = require('./routes/estadisticaRoutes');
+const empleadoRoutes = require('./routes/empleadoRoutes');
+// usuarioRoutes.js queda deshabilitada a propósito: es del esquema viejo
+// (tablas USUARIO/ROL) que ya no existe; el manejo de personal ahora es
+// por la tabla EMPLEADO directamente (ver empleadoRoutes.js).
 
 const app = express();
 
@@ -42,6 +45,10 @@ app.use('/api/admin-tablas', adminTablasRoutes);
 app.use('/api/productos', productoRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/admin-consultas', consultaRoutes);
+app.use('/api/reservas', reservaRoutes);
+app.use('/api/finanzas', financeRoutes);
+app.use('/api/estadisticas', estadisticaRoutes);
+app.use('/api/empleados', empleadoRoutes);
 app.use('/api', infraestructuraRoutes);
 
 // Manejador de errores genérico

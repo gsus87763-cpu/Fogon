@@ -10,6 +10,7 @@ const ACCESOS_POR_ROL = {
     { to: '/panel/clientes', titulo: 'Clientes', desc: 'Gestionar cuentas de clientes' },
     { to: '/panel/ambientes', titulo: 'Ambientes', desc: 'Gestionar salones y ambientes' },
     { to: '/panel/finanzas', titulo: 'Finanzas', desc: 'Pagos, facturas y compras' },
+    { to: '/panel/solicitudes-empleado', titulo: 'Solicitudes de personal', desc: 'Aprobar o rechazar registros de nuevos empleados' },
     { to: '/panel/consultas', titulo: 'Consultas SQL', desc: 'Ejecutar consultas directas sobre la BD de Railway' }
   ],
   salon: [

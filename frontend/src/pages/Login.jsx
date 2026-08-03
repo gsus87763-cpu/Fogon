@@ -62,6 +62,10 @@ export default function Login() {
       const res = await api.post('/auth/login', {
         correo, password, captchaId: captcha?.captchaId, captchaRespuesta
       });
+      if (res.data.estadoSolicitud) {
+        navigate('/solicitud-personal', { state: res.data });
+        return;
+      }
       entrarConSesion(res.data);
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.');
@@ -138,6 +142,9 @@ export default function Login() {
 
           <p style={{ fontSize: '.9rem', textAlign: 'center' }}>
             ¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link>
+          </p>
+          <p style={{ fontSize: '.85rem', textAlign: 'center', color: 'var(--texto-secundario)' }}>
+            ¿Trabajas en El Fogón? <Link to="/registro-empleado">Regístrate como personal</Link>
           </p>
         </form>
       </div>

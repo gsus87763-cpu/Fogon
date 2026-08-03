@@ -9,6 +9,8 @@ import Eventos from './pages/Eventos.jsx';
 import SobreNosotros from './pages/SobreNosotros.jsx';
 import Login from './pages/Login.jsx';
 import Registro from './pages/Registro.jsx';
+import RegistroEmpleado from './pages/RegistroEmpleado.jsx';
+import SolicitudEstado from './pages/SolicitudEstado.jsx';
 import RecuperarPassword from './pages/RecuperarPassword.jsx';
 import RestablecerPassword from './pages/RestablecerPassword.jsx';
 import Reservas from './pages/Reservas.jsx';
@@ -21,6 +23,7 @@ import PanelAmbientes from './pages/PanelAmbientes.jsx';
 import PanelFinanzas from './pages/PanelFinanzas.jsx';
 import PanelTablas from './pages/PanelTablas.jsx';
 import PanelConsultas from './pages/PanelConsultas.jsx';
+import PanelSolicitudesEmpleados from './pages/PanelSolicitudesEmpleados.jsx';
 
 export default function App() {
   return (
@@ -33,6 +36,8 @@ export default function App() {
         <Route path="/sobre-nosotros" element={<SobreNosotros />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
+        <Route path="/registro-empleado" element={<RegistroEmpleado />} />
+        <Route path="/solicitud-personal" element={<SolicitudEstado />} />
         <Route path="/recuperar-password" element={<RecuperarPassword />} />
         <Route path="/restablecer-password" element={<RestablecerPassword />} />
         <Route path="/reservas" element={<Reservas />} />
@@ -61,6 +66,9 @@ export default function App() {
         } />
         <Route path="/panel/consultas" element={
           <RutaProtegida rolesPermitidos={['admin']}><PanelConsultas /></RutaProtegida>
+        } />
+        <Route path="/panel/solicitudes-empleado" element={
+          <RutaProtegida rolesPermitidos={['admin']}><PanelSolicitudesEmpleados /></RutaProtegida>
         } />
 
         <Route path="*" element={<Home />} />

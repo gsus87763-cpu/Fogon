@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const asyncHandler = require('../middlewares/asyncHandler');
-const { verificarToken, permitirRoles } = require('../middlewares/auth');
 
 // Público: ambientes (para la web y el formulario de reserva)
 router.get('/ambientes', asyncHandler(async (req, res) => {
@@ -20,10 +19,8 @@ router.get('/mesas', asyncHandler(async (req, res) => {
   res.json(filas);
 }));
 
-// Interno: empleados (RRHH / admin)
-router.get('/empleados', verificarToken, permitirRoles('admin'), asyncHandler(async (req, res) => {
-  const [filas] = await pool.query("SELECT * FROM empleado WHERE estado <> 'Inactivo' OR estado IS NULL ORDER BY apellidos");
-  res.json(filas);
-}));
+// Nota: el listado de personal ahora vive en /api/empleados
+// (ver empleadoRoutes.js), que además soporta filtrar por estado
+// (Pendiente/Activo/Rechazado/etc.) para el flujo de aprobación.
 
 module.exports = router;
